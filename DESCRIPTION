@@ -1,0 +1,18 @@
+Package: tbreak
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R: 
+    person("Shawn", "Laffan", , "shawnlaffan@gmail.com", role = c("aut", "cre"))
+Description: Wraps the RBeast and bfast code to work with raster data, including exports and per-cell plotting.
+License: `use_mit_license()`
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports: 
+    terra,
+    Rbeast,
+    stringi,
+    ncdf4,
+    lubridate,
+    methods,
+    parzer
