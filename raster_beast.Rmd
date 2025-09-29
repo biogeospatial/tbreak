@@ -1,0 +1,111 @@
+---
+title: "BEAST with spatial data"
+output: html_notebook
+---
+
+Load needed libraries.  Install if necessary.
+
+```{r}
+
+pack_list = c("terra", "Rbeast", "stringi", "svDialogs", "ncdf4", "lubridate", "methods", "parzer")
+install_list = pack_list[!(pack_list %in% installed.packages()[,"Package"])]
+if(length(install_list)) install.packages(install_list)
+
+for (p in pack_list) {
+  library(p, character.only = TRUE)
+}
+
+pack_list = c("tbreak")
+install_list = pack_list[!(pack_list %in% installed.packages()[,"Package"])]
+if(length(install_list)) devtools::install_github("biogeospatial/tbreak")
+
+for (p in pack_list) {
+  library(p, character.only = TRUE)
+}
+
+if (!hasMethods("toMemory", package="terra")) {
+  #  update terra
+  install.packages("terra")
+  library("terra")
+}
+
+
+```
+
+Now load the file we want and display some of its properties, and the first band.
+
+Make sure you load a geotiff or netcdf file with _ONLY ONE INDEX_, 
+e.g. EVI or NDVI, not both.  The code does not handle more than that and weird 
+things will happen.  
+
+```{r}
+
+fname = file.choose()
+
+raster = rast(fname)
+
+dim (raster)
+
+time(raster)[1:6]
+
+t1 = time(raster)[1]
+
+plot (raster[[1]], main = as.character(t1))
+
+```
+
+Now run beast on the loaded data set.  This might take a while.
+
+```{r}
+
+beast_result = tbreak:::beast_modis (raster)
+
+plot (beast_result)
+
+
+
+```
+
+Some interaction.  Rerun this step each time you want to plot a different location.
+
+The coordinates to enter are obtained by right clicking on the map in ArcGIS
+and choosing "Copy Coordinates".
+
+In ArcGIS:
+
+  Make sure the map's display uses the MODIS Sinusoidal coordinate system.
+  Also that the map's "Display units" are in "meters".
+  Both of these can be set under the map's properties (right click on the map name 
+  in the table of contents).  Display units is under the General section, 
+  the Coordinate Systems should be self-documenting.
+
+  The display units can also be changed by clicking 
+  the drop down to the right of the coordinate at the bottom of the map pane.
+
+```{r}
+
+
+coord_string = dlg_input("Enter a coordinate from ArcGIS in the MODIS coord sys")$res
+
+if (length (coord_string)) {
+  tbreak:::plot_beast_modis_coord (beast_result, coord = coord_string)
+}
+
+
+```
+
+Now export the beast results to a set of rasters.  
+
+```{r}
+
+output_dir = svDialogs::dlgDir()$res
+
+output_prefix = svDialogs::dlg_input(message = "Filename prefix", default="")$res
+
+save_flag      = svDialogs::dlg_list  (choices = c("No", "Yes"), title = "Overwrite existing files?")$res
+overwrite_flag = ifelse (length(save_flag) > 0 && save_flag == "Yes", TRUE, FALSE)
+
+b_rasters = tbreak:::export_beast_rasters(beast_result, output_dir, output_prefix, overwrite_flag)
+
+
+```
