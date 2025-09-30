@@ -357,6 +357,8 @@ plot_bfast_modis_coord = function (raster, coord) {
   }
   else {
     dates = terra::time(raster)
+    #  nasty but we otherwise get bfastts errors
+    dates = strptime(strftime(dates, format="%Y%m%d"), "%Y%m%d")
   }
   
   cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
