@@ -79,11 +79,9 @@ ArcGIS and choosing "Copy Coordinates".
 
 In ArcGIS:
 
-Make sure the map's display uses the MODIS Sinusoidal coordinate system.
-Also that the map's "Display units" are in "meters". Both of these can
-be set under the map's properties (right click on the map name in the
-table of contents). Display units is under the General section, the
-Coordinate Systems should be self-documenting.
+Make sure the map's display units uses either the MODIS Sinusoidal coordinate 
+system or WGS 1984. These can be checked and set under the map's properties 
+(right click on the map name in the table of contents). 
 
 The display units can also be changed by clicking the drop down to the
 right of the coordinate at the bottom of the map pane.
