@@ -1,0 +1,179 @@
+---
+title: "Download MODIS time series"
+output: html_notebook
+---
+
+Load needed libraries, installing if necessary.
+
+
+```{r}
+
+pack_list = c("MODISTools", "terra", "stringi", "svDialogs", "ncdf4")
+install_list = pack_list[!(pack_list %in% installed.packages()[,"Package"])]
+if(length(install_list)) install.packages(install_list)
+
+for (p in pack_list) {
+  library(p, character.only = TRUE)
+}
+
+
+```
+
+Load some functions
+
+```{r}
+
+prod = list (
+  vi = "MOD13Q1",
+  # fire = "MOD64A1",
+  landcover = "MCD12Q1"
+)
+
+vi_bands = list (EVI = "250m_16_days_EVI",
+                 NDVI = "250m_16_days_NDVI",
+                 VI_quality = "250m_16_days_VI_Quality"
+)
+lc_bands = list (
+  IGBP = "LC_Type1",
+  UM   = "LC_Type2",
+  LAI  = "LC_Type3"
+)
+#  veg indices
+
+defaults = list (
+  EVI        = c(prod[["vi"]], vi_bands["EVI"]),
+  NDVI       = c(prod[["vi"]], vi_bands[["NDVI"]]),
+  VI_quality = c(prod[["vi"]], vi_bands[["VI_quality"]]),
+  #fire       = c(prod[["fire"]], 1),
+  landcover_IGBP = c(prod[["landcover"]], lc_bands[["IGBP"]]),
+  landcover_LAI  = c(prod[["landcover"]], lc_bands[["LAI"]]),
+  landcover_UM   = c(prod[["landcover"]], lc_bands[["UM"]])
+)
+
+
+get_modis_ts = function (
+    target = NULL,
+    lat = -32.3999589, lon = 152.4737143,
+    site_name="Smiths_Lake",
+    km_lr = 20,
+    km_ab = 20,
+    internal = TRUE,
+    progress = TRUE,
+    product  = NULL, band = NULL,
+    no_export = FALSE,
+    overwrite = FALSE,
+    ...
+    ) {
+
+  #  grab from system defaults
+  if (!is.null(target)) {
+    message ("Setting product and band from ", target)
+    vals    = defaults[[target]]
+    product = vals[1]
+    band    = vals[2]
+  }
+
+  df = mt_subset(
+    product = product,
+    lat = lat,
+    lon = lon,
+    band = band,
+    site_name = site_name,
+    km_lr = km_lr,
+    km_ab = km_lr,
+    internal = internal,
+    progress = progress
+  )
+  df_r = mt_to_terra(df = df, reproject = FALSE)
+  time(df_r) = as.Date(strptime (names(df_r), "%Y-%m-%d"))
+  df_r[df_r < -0.2] = NA
+
+  if (!no_export) {
+    name = sprintf("%s_%s_%s", site_name, product, band)
+    name_tiff = paste0(name, ".tif")
+    name_nc   = paste0(name, ".nc")
+    message ("Saving to multiband raster: ", name_tiff)
+    tryCatch (
+      writeRaster(df_r, name_tiff, overwrite_flag = overwrite),
+      error = function (e) e
+    )
+    message ("saving to netCDF file: ", name_nc)
+    tryCatch (
+      writeCDF(df_r, name_nc, overwrite_flag = overwrite),
+      error = function (e) e
+    )
+  }
+
+  return (df_r)
+}
+
+```
+
+Get the user parameters.
+
+```{r}
+# a single form would be nice but GUI is only supported on linux
+# form <- list(
+#   "Site name:TXT" = "John Smith",
+#   "Latitude:NUM" = 0.5,
+#   "Longitude:NUM" = 0.5,
+#   "Extent width:NUM" = 20,
+#   "Extent height:NUM" = 20,
+#   "Export rasters:CHK" = TRUE
+# )
+# dlg_form(form, "My data", gui = .GUI)$res
+
+
+site_name = dlg_input ("Enter the site name", default = "some_random_site")$res
+
+lat = as.numeric(dlg_input ("Enter the latitude", default = -35)$res)
+if (is.na(lat) || length (lat) == 0) {
+  stop ("Latitude must be specified and must be numeric")
+}
+
+lon = as.numeric(dlg_input ("Enter the longitude", default = 150)$res)
+if (is.na(lon) || length (lon) == 0) {
+  stop ("Longitude must be specified and must be numeric")
+}
+
+ext_width  = as.numeric(dlg_input ("Enter the extent width",  default = 20)$res)
+if (is.na(ext_width) || length (ext_width) == 0) {
+  stop ("Extent width must be specified and must be numeric")
+}
+
+ext_height = as.numeric(dlg_input ("Enter the extent height", default = 20)$res)
+if (is.na(ext_height) || length (ext_height) == 0) {
+  stop ("Extent height must be specified and must be numeric")
+}
+
+save_flag = dlg_list  (choices = c("Yes", "No"), title = "Save raster to files?")$res
+no_export = ifelse (length(save_flag) > 0 && save_flag == "Yes", FALSE, TRUE)
+
+target = dlg_list (choices = names (defaults), title = "Target MODIS index")$res
+if (length(target) == 0) {
+  target = "EVI"
+}
+#  edit these by hand if you want products and bands not in the defaults
+product = NULL
+band    = NULL
+
+message ("Coords are ", lat, " ", lon)
+message ("Box sizes are ", ext_width, " ", ext_height)
+message ("no_export is ", no_export)
+message ("save_flag is ", save_flag)
+
+ts = get_modis_ts (
+  target = target,
+  lat = lat, lon = lon,
+  site_name = site_name,
+  km_lr     = ext_width,
+  km_ab     = ext_height,
+  internal  = TRUE,
+  progress  = TRUE,
+  product   = product, band = band,
+  no_export = no_export
+)
+
+getwd()
+
+```
