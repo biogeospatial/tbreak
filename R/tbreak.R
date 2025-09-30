@@ -57,7 +57,7 @@ beast_modis = function (raster, start_time = NULL, ...) {
   gc()
   
   
-  o = beast123 (Y, metadata = metadata, extra = extra, ...)
+  o = Rbeast::beast123 (Y, metadata = metadata, extra = extra, ...)
   
   #  pack in some extra info - underhanded but works for now
   o$ext = as.vector(ext(raster)) #  ext objects do not survive serialisation otherwise
@@ -360,6 +360,9 @@ plot_bfast_modis_coord = function (raster, coord) {
   }
   
   cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
+  if (is.na(cell_num)) {
+    stop ("Coord does not intersect the raster")
+  }
   t2 = bfast::bfastts(unlist(raster[cell_num]), dates, type = '16-day')
   tb = bfast::bfast(t2)
   plot(tb)
