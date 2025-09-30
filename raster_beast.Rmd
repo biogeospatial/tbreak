@@ -91,7 +91,11 @@ right of the coordinate at the bottom of the map pane.
 ```{r}
 
 
-coord_string = svDialogs::dlg_input("Enter a coordinate from ArcGIS in the MODIS coord sys")$res
+response = svDialogs::dlg_input(
+  message = "Enter a coordinate from ArcGIS (MODIS or WGS84 coord sys)"
+)
+
+coord_string = response$res
 
 if (length (coord_string)) {
   tbreak:::plot_beast_modis_coord (beast_result, coord = coord_string)
@@ -99,7 +103,22 @@ if (length (coord_string)) {
 
 
 ```
+Generate a bfast output for the same coord.
 
+```{r}
+
+response = svDialogs::dlg_input(
+  message = "Enter a coordinate from ArcGIS (MODIS or WGS84 coord sys)", 
+  default = coord_string
+)
+
+coord_string = response$res
+if (length (coord_string)) {
+#  tbreak:::plot_beast_modis_coord (beast_result, coord = coord_string)
+}
+
+
+```
 Now export the beast results to a set of rasters.
 
 ```{r}
@@ -115,3 +134,4 @@ b_rasters = tbreak:::export_beast_rasters(beast_result, output_dir, output_prefi
 
 
 ```
+
