@@ -122,6 +122,27 @@ if (length (coord_string)) {
 
 
 ```
+Generate a plain time series plot for the same coord, or a different 
+one if preferred.
+
+This is mostly useful for diagnostic checks as the bfast plot 
+includes the time series as the top plot.  
+
+```{r}
+
+response = svDialogs::dlg_input(
+  message = "Enter a coordinate from ArcGIS (MODIS or WGS84 coord sys)", 
+  default = coord_string
+)
+
+coord_string = response$res
+if (length (coord_string)) {
+  ts_res = tbreak:::plot_ts_modis_coord (raster, coord = coord_string)
+}
+
+
+```
+
 Now export the beast results to a set of rasters.
 
 ```{r}

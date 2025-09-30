@@ -387,3 +387,36 @@ assign_time_to_raster = function (raster, format= "%Y-%m-%d") {
   }
   return(raster)
 }
+
+
+plot_ts_modis_coord = function (raster, coord) {
+    coord = parse_arcgis_coord(coord)
+    
+    #  generate time axis if needed
+    #  assumes form 2024-01-24 somewhere in band name
+    #  dup from above - should be a function
+    if (all (is.na(terra::time(raster)))) {
+      dates = names(raster)
+      pattern = r"(\b\d{4}-\d{2}-\d{2}\b)"
+      m = regexpr(pattern, dates)
+      dates = regmatches(dates, m)
+      dates = strptime(dates, "%Y-%m-%d")
+    }
+    else {
+      dates = terra::time(raster)
+      #  nasty but we otherwise get bfastts errors
+      dates = strptime(strftime(dates, format="%Y%m%d"), "%Y%m%d")
+    }
+    
+    cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
+    if (is.na(cell_num)) {
+      stop ("Coord does not intersect the raster")
+    }
+    u = unlist(raster[cell_num])
+    z = zoo(u, dates)
+    plot (z, xlab = "Index", ylab = "Date")
+    if (any(is.na(u))) {
+      warning("NAs found in time series - break analyses might not work")
+    }
+    invisible(z)
+}
