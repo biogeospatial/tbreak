@@ -1,3 +1,13 @@
+library("Rbeast")
+library("bfast")
+library("zoo")
+library("stringi")
+library("lubridate")
+library("methods")
+library("parzer")
+library("terra")
+library("ncdf4")
+
 beast_modis = function (raster, start_time = NULL, ...) {
   
   #  work on a copy in case it is not in memory
@@ -13,7 +23,7 @@ beast_modis = function (raster, start_time = NULL, ...) {
     pattern = r"(\b\d{4}-\d{2}-\d{2}\b)"
     m = regexpr(pattern, dates)
     dates = regmatches(dates, m)
-    time(tmp_ras) = strptime(dates, "%Y-%m-%d")
+    terra::time(tmp_ras) = strptime(dates, "%Y-%m-%d")
   }
   
   # Y = values(tmp_ras)
@@ -155,12 +165,12 @@ load_data = function (file = NULL, drivers=NULL) {
     file = file.choose()
   }
   r = rast(file, drivers=drivers)
-  if (any (is.na(time(r)))) {
+  if (any (is.na(terra::time(r)))) {
     dates = strptime(names(r), "%Y-%m-%d")
     if (any(is.na(dates))) {
       stop ("Some of the field names do not satisfy the date format requirement (yyyy-mm-dd)")
     }
-    time(r) = as.Date(dates)
+    terra::time(r) = as.Date(dates)
   }
   return (r)
 }
@@ -267,7 +277,7 @@ beastbit2raster = function (b, component = "trend", subcomponent = "ncp", templa
         if (is.null(t)) {
           t = lubridate::date_decimal (b$time)
         }
-        time(r) = t
+        terra::time(r) = t
       }
       
       names(r) = paste0 (
@@ -321,7 +331,7 @@ export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
     r[r == Inf] = NA
     writeRaster(list[[name]], outfile, overwrite=overwrite)
     #  also dump netCDF for temporal data
-    if (!anyNA(time(r))) {
+    if (!anyNA(terra::time(r))) {
       outfile = paste0 (pfx, ".nc")
       message (outfile)
       writeCDF(list[[name]], outfile, overwrite=overwrite)
@@ -330,3 +340,28 @@ export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
   invisible(list)
 }
 
+
+
+plot_bfast_modis_coord = function (raster, coord) {
+  coord = parse_arcgis_coord(coord)
+
+  #  generate time axis if needed
+  #  assumes form 2024-01-24 somewhere in band name
+  #  dup from above - should be a function
+  if (all (is.na(terra::time(raster)))) {
+    dates = names(raster)
+    pattern = r"(\b\d{4}-\d{2}-\d{2}\b)"
+    m = regexpr(pattern, dates)
+    dates = regmatches(dates, m)
+    dates = strptime(dates, "%Y-%m-%d")
+  }
+  else {
+    dates = terra::time(raster)
+  }
+  
+  cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
+  t2 = bfast::bfastts(unlist(raster[cell_num]), dates, type = '16-day')
+  tb = bfast::bfast(t2)
+  plot(tb)
+  invisible (tb)
+}
