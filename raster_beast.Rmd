@@ -49,6 +49,11 @@ fname = file.choose()
 
 raster = rast(fname)
 
+#  some don't have it 
+if (any(is.na(terra::time(raster)))) {
+  raster = tbreak:::assign_time_to_raster(raster)
+}
+
 dim (raster)
 
 time(raster)[1:6]

@@ -368,3 +368,20 @@ plot_bfast_modis_coord = function (raster, coord) {
   plot(tb)
   invisible (tb)
 }
+
+assign_time_to_raster = function (raster, format= "%Y-%m-%d") {
+  #  assumes form 2024-01-24 somewhere in band name
+  #  dup from above - should be a function
+  if (any (is.na(terra::time(raster)))) {
+    dates = names(raster)
+    pattern = r"(\b\d{4}-\d{2}-\d{2}\b)"
+    m = regexpr(pattern, dates)
+    dates = regmatches(dates, m)
+    dates = strptime(dates, format)
+    terra::time(raster) = dates
+  }
+  else {
+    message ("Raster already has times")
+  }
+  return(raster)
+}
