@@ -1,5 +1,6 @@
 library("Rbeast")
 library("bfast")
+library("zoo")
 library("stringi")
 library("lubridate")
 library("methods")
@@ -339,3 +340,28 @@ export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
   invisible(list)
 }
 
+
+
+plot_bfast_modis_coord = function (raster, coord) {
+  coord = parse_arcgis_coord(coord)
+
+  #  generate time axis if needed
+  #  assumes form 2024-01-24 somewhere in band name
+  #  dup from above - should be a function
+  if (all (is.na(terra::time(raster)))) {
+    dates = names(raster)
+    pattern = r"(\b\d{4}-\d{2}-\d{2}\b)"
+    m = regexpr(pattern, dates)
+    dates = regmatches(dates, m)
+    dates = strptime(dates, "%Y-%m-%d")
+  }
+  else {
+    dates = terra::time(raster)
+  }
+  
+  cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
+  t2 = bfast::bfastts(unlist(raster[cell_num]), dates, type = '16-day')
+  tb = bfast::bfast(t2)
+  plot(tb)
+  invisible (tb)
+}

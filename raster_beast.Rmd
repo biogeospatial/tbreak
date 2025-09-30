@@ -103,7 +103,7 @@ if (length (coord_string)) {
 
 
 ```
-Generate a bfast output for the same coord.
+Generate a bfast output for the same coord, or a different one if preferred.
 
 ```{r}
 
@@ -114,7 +114,7 @@ response = svDialogs::dlg_input(
 
 coord_string = response$res
 if (length (coord_string)) {
-#  tbreak:::plot_beast_modis_coord (beast_result, coord = coord_string)
+  bfast_res = tbreak:::plot_bfast_modis_coord (raster, coord = coord_string)
 }
 
 
