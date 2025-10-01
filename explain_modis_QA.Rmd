@@ -1,0 +1,136 @@
+---
+title: "Explain MODIS time series QA codes"
+output: html_notebook
+---
+
+Needed libs
+
+```{r}
+pack_list = c("svDialogs")
+install_list = pack_list[!(pack_list %in% installed.packages()[,"Package"])]
+if(length(install_list)) install.packages(install_list)
+
+for (p in pack_list) {
+  library(p, character.only = TRUE)
+}
+
+```
+
+Load some functions
+
+```{r}
+modis_qa_explain = function (code) {
+  #b = sapply(strsplit(paste(rev(intToBits(code)[1:16])),""),`[[`,2)
+  b = as.logical(rev(intToBits(code)[1:16]))
+  #message (paste(bits, collapse = " "))
+  #b = as.logical(b)
+  #message (paste (b, sep=" ", collapse= " "))
+  to_bit_field = function (x) paste0(as.numeric(x), collapse="")
+
+  result = list(
+    bitmask = to_bit_field(b)
+  )
+
+  bm = to_bit_field(b[1:2])
+  str = "VI produced with good quality"
+  if (bm == "11") {
+    str = "Pixel not produced due to other reasons than clouds"
+  }
+  else if (bm == "10") {
+    str = "Pixel produced, but most probably cloudy"
+  }
+  else if (bm == "01") {
+    str = "VI produced, but check other QA"
+  }
+  result["VI Quality"] = sprintf ("%s (%s)", str, bm)
+
+  str = "Highest quality"
+  v = b[3:6]
+  bm = to_bit_field(v)
+  if (any(v)) {
+    if (bm == "0001") {
+      str = "Lower quality"
+    }
+    else if (bm == "1100") {
+      str = "Lowest quality"
+    }
+    else if (bm == "1101") {
+      str = "Quality so low that it is not useful"
+    }
+    else if (bm == "1110") {
+      str = "L1B data faulty"
+    }
+    else if (bm == "1111") {
+      str = "Not useful for any other reason/not processed"
+    }
+    else {
+      str = "Decreasing quality"
+    }
+  }
+  result["VI Usefulness"] = sprintf ("%s (%s)", str, bm)
+
+  str = "Climatology"
+  bm = to_bit_field (b[7:8])
+  if (bm == "11") {
+    str = "High"
+  }
+  else if (bm == "10") {
+    str = "Intermediate"
+  }
+  else if (bm == "01") {
+    str = "Low"
+  }
+  result["Aerosol quantity"] = sprintf ("%s (%s)", str, bm)
+
+  result["Adjacent cloud detected"]    = ifelse (b[9],  "Yes", "No")
+  result["Atmosphere BRDF correction"] = ifelse (b[10], "Yes", "No")
+  result["Mixed clouds"]               = ifelse (b[11], "Yes", "No")
+
+  str = "Shallow Ocean"
+  v = b[12:14]
+  bm = to_bit_field (v)
+  if (any (v)) {
+    if (bm == "001") {
+      str = "Land (nothing else but land"
+    }
+    else if (bm == "010") {
+      str = "Ocean coastlines and lake shorelines"
+    }
+    else if (bm == "011") {
+      str = "Shallow inland water"
+    }
+    else if (bm == "100") {
+      str = "Ephemeral water"
+    }
+    else if (bm == "101") {
+      str = "Deep inland water"
+    }
+    else if (bm == "110") {
+      str = "Moderate or continental ocean"
+    }
+    else if (bm == "111") {
+      str = "Deep ocean"
+    }
+  }
+  result["Land/Water mask"] = sprintf ("%s (%s)", str, bm)
+
+  result["Possible snow/ice"] = ifelse (b[15], "Yes", "No")
+  result["Possible shadow"]   = ifelse (b[16], "Yes", "No")
+
+  result
+}
+
+```
+
+Now pass it some number and see what happens
+
+```{r}
+
+value = as.numeric(dlg_input ("Enter the QA code", default = 0)$res)
+if (is.na(value) || value < 0 || value > 2^16-1) {
+  stop ("Value must be numeric and between 0 and 2^16-1")
+}
+
+modis_qa_explain (value)
+
+```
