@@ -24,7 +24,7 @@ for (p in pack_list) {
 }
 
 #  Other libs needed below
-pack_list = c("svDialogs", "terra")
+pack_list = c("svDialogs", "terra", "stringi")
 install_list = pack_list[!(pack_list %in% installed.packages()[,"Package"])]
 if(length(install_list)) {
   install.packages(install_list)
@@ -53,6 +53,7 @@ raster = rast(fname)
 if (any(is.na(terra::time(raster)))) {
   raster = tbreak:::assign_time_to_raster(raster)
 }
+raster[raster < -0.25] = NA
 
 dim (raster)
 
@@ -117,7 +118,7 @@ response = svDialogs::dlg_input(
 
 coord_string = response$res
 if (length (coord_string)) {
-  bfast_res = tbreak:::plot_bfast_modis_coord (raster, coord = coord_string)
+  bfast_res = tbreak:::plot_bfast_modis_coord (raster, coord = coord_string, h=1/7)
 }
 
 
