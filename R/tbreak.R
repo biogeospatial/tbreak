@@ -78,6 +78,10 @@ parse_arcgis_coord = function (coord) {
   if (!in_metres) {
     library("parzer")
     library("sf")
+    x_hemi = toupper (stri_extract(xy[1], regex = "[NESWnesw]"))
+    if (x_hemi %in% c("N", "S")) {
+      xy = rev (xy)
+    }
     x = parse_lon(xy[1])
     y = parse_lat(xy[2])
     point = st_sfc(st_point(c(x,y)), crs = 4326)
