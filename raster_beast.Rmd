@@ -63,6 +63,9 @@ t1 = time(raster)[1]
 
 plot (raster[[1]], main = as.character(t1))
 
+#  initialise for later
+coord_string = ""
+
 ```
 
 Now run beast on the loaded data set. This might take a while.
@@ -96,12 +99,13 @@ right of the coordinate at the bottom of the map pane.
 
 
 response = svDialogs::dlg_input(
-  message = "Enter a coordinate from ArcGIS (MODIS or WGS84 coord sys)"
+  message = "Enter a coordinate from ArcGIS (MODIS or WGS84 coord sys)",
+  default = coord_string
 )
 
-coord_string = response$res
-
-if (length (coord_string)) {
+resp = response$res
+if (length (resp)) {
+  coord_string = resp
   tbreak:::plot_beast_modis_coord (beast_result, coord = coord_string)
 }
 
@@ -116,8 +120,9 @@ response = svDialogs::dlg_input(
   default = coord_string
 )
 
-coord_string = response$res
-if (length (coord_string)) {
+resp = response$res
+if (length (resp)) {
+  coord_string = resp
   bfast_res = tbreak:::plot_bfast_modis_coord (raster, coord = coord_string, h=1/7)
 }
 
@@ -136,8 +141,9 @@ response = svDialogs::dlg_input(
   default = coord_string
 )
 
-coord_string = response$res
-if (length (coord_string)) {
+resp = response$res
+if (length (resp)) {
+  coord_string = resp
   ts_res = tbreak:::plot_ts_modis_coord (raster, coord = coord_string)
 }
 
