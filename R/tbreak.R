@@ -67,7 +67,7 @@ beast_modis = function (raster, start_time = NULL, ...) {
   return (o)
 }
 
-parse_arcgis_coord = function (coord) {
+parse_coord_string = function (coord) {
   coord = stri_trim(coord)
 
   in_metres = stri_sub(coord, -1) == "m"
@@ -75,12 +75,20 @@ parse_arcgis_coord = function (coord) {
   xy = stri_split_regex(coord, "\\s")[[1]][1:2]
   xy = stri_replace_all_fixed (xy, replacement="", pattern=",")
 
+
   if (!in_metres) {
     library("parzer")
     library("sf")
-    x_hemi = toupper (stri_extract(xy[1], regex = "[NESWnesw]"))
-    if (x_hemi %in% c("N", "S")) {
-      xy = rev (xy)
+
+    poss_plain_dd = stri_detect (coord, regex = r"(^-?\d+\.\d+,\s+-?\d+\.\d+$)")
+
+    if (poss_plain_dd) {
+      xy = stri_split_regex(coord, ",\\s+")[[1]][2:1]
+    } else {
+      x_hemi = toupper (stri_extract(xy[1], regex = "[NESWnesw]"))
+      if (x_hemi %in% c("N", "S")) {
+        xy = rev (xy)
+      }
     }
     x = parse_lon(xy[1])
     y = parse_lat(xy[2])
@@ -111,7 +119,7 @@ parse_arcgis_coord = function (coord) {
 
 
 ext_from_arcgis_coord = function (coord, xoff=100000, yoff=-100000) {
-  coord = parse_arcgis_coord(coord)
+  coord = parse_coord_string(coord)
   x1 = coord[1]
   x2 = coord[1] + xoff
   y1 = coord[2]
@@ -122,7 +130,7 @@ ext_from_arcgis_coord = function (coord, xoff=100000, yoff=-100000) {
 #  convert a coordinate copied from ArcGIS to a format usable with terra
 #  requires the extent be stored on the rbeast object
 coord2idx_rbeast = function (b, coord) {
-  coord = parse_arcgis_coord(coord)
+  coord = parse_coord_string(coord)
   x = coord[1]
   y = coord[2]
 
@@ -347,7 +355,7 @@ export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
 
 
 plot_bfast_modis_coord = function (raster, coord, h=0.15) {
-  coord = parse_arcgis_coord(coord)
+  coord = parse_coord_string(coord)
 
   #  generate time axis if needed
   #  assumes form 2024-01-24 somewhere in band name
@@ -396,7 +404,7 @@ assign_time_to_raster = function (raster, format= "%Y-%m-%d") {
 
 
 plot_ts_modis_coord = function (raster, coord) {
-    coord = parse_arcgis_coord(coord)
+    coord = parse_coord_string(coord)
 
     #  generate time axis if needed
     #  assumes form 2024-01-24 somewhere in band name
