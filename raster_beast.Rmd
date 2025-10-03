@@ -53,7 +53,10 @@ raster = rast(fname)
 if (any(is.na(terra::time(raster)))) {
   raster = tbreak:::assign_time_to_raster(raster)
 }
-raster[raster < -0.25] = NA
+if (any(minmax(raster)[1,] < -0.25)) {
+  raster[raster < -0.25] = NA
+}
+
 
 dim (raster)
 
