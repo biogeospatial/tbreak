@@ -148,20 +148,25 @@ if (length (resp)) {
 
 Now run beast on the loaded raster. This might take a while.
 
+Plotted result is the number of trend change points across the raster.
+
 ```{r}
 
-#  Try to gracefully handle errors without overwriting 
-#  a pre-existing beast_raster object if we fail.
+#  Try to gracefully handle errors without overwriting a
+#  pre-existing beast_raster object if we fail.
 #  That said, stopping the session kills it all anyway.
-beast_result_tmp = tryCatch({
+beast_result_tmp = tryCatch(
+  {
     tbreak:::beast_modis (raster)
-}, error = function(e) {
+  }, error = function(e) {
     stop ("Unable to process data")
-})
+  }
+)
 
 beast_result = beast_result_tmp
-plot (beast_result)
 rm (beast_result_tmp)
+ncp_raster = beastbit2raster(beast_result, "trend", "ncp")
+plot (ncp_raster, main = "Number of trend change points")
 
 ```
 
