@@ -72,10 +72,18 @@ Now run beast on the loaded data set. This might take a while.
 
 ```{r}
 
-beast_result = tbreak:::beast_modis (raster)
+#  Try to gracefully handle errors without overwriting 
+#  a pre-existing beast_raster object if we fail.
+#  That said, stopping the session kills it all anyway.
+beast_result_tmp = tryCatch({
+    tbreak:::beast_modis (raster)
+}, error = function(e) {
+    stop ("Unable to process data")
+})
 
+beast_result = beast_result_tmp
 plot (beast_result)
-
+rm (beast_result_tmp)
 
 
 ```
