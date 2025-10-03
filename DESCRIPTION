@@ -1,5 +1,5 @@
 Package: tbreak
-Title: What the Package Does (One Line, Title Case)
+Title: Run beast and bfast change detection algorithms on raster data.
 Version: 0.0.2.9000
 Authors@R: 
     person("Shawn", "Laffan", , "shawnlaffan@gmail.com", role = c("aut", "cre"))
