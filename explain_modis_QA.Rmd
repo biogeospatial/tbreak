@@ -6,7 +6,7 @@ output: html_notebook
 Needed libs
 
 ```{r}
-pack_list = c("svDialogs")
+pack_list = c("svDialogs", "stringi")
 install_list = pack_list[!(pack_list %in% installed.packages()[,"Package"])]
 if(length(install_list)) install.packages(install_list)
 
@@ -131,6 +131,18 @@ if (is.na(value) || value < 0 || value > 2^16-1) {
   stop ("Value must be numeric and between 0 and 2^16-1")
 }
 
-modis_qa_explain (value)
+res = modis_qa_explain (value)
+
+#  There will be a tidyverse way of doing this.
+len = max(stri_length(names(res)))
+fmt = paste0("%-", len, "s: %s")
+i = 0
+o = character()
+for (name in names(res)) {
+  i = i + 1
+  o1 = sprintf (fmt, name, res[[name]])
+  o[i] = o1
+}
+o
 
 ```
