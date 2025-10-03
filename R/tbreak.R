@@ -154,7 +154,7 @@ coord2idx_rbeast = function (b, coord) {
 }
 
 
-plot_beast_modis_coord = function (b, coord, t=FALSE) {
+plot_beast_modis_coord = function (b, coord, t=FALSE, main=NULL) {
   rowcol = coord2idx_rbeast(b, coord)
 
 
@@ -168,7 +168,7 @@ plot_beast_modis_coord = function (b, coord, t=FALSE) {
   message ("Plotting image row ", rc[1], ", col ", rc[2])
   message ("Mean number of trend change points is ",  b$trend$ncp[rc[1],rc[2]])
   message ("Mean number of season change points is ", b$season$ncp[rc[1],rc[2]])
-  plot (b[rc])
+  plot (b[rc], main=main)
 
 }
 
@@ -354,7 +354,7 @@ export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
 
 
 
-plot_bfast_modis_coord = function (raster, coord, h=0.15) {
+plot_bfast_modis_coord = function (raster, coord, h=0.15, main=NULL) {
   coord = parse_coord_string(coord)
 
   #  generate time axis if needed
@@ -381,7 +381,7 @@ plot_bfast_modis_coord = function (raster, coord, h=0.15) {
   u[u < -0.25] = NA
   t2 = bfast::bfastts(u, dates, type = '16-day')
   tb = bfast::bfast(t2, h=h)
-  plot(tb)
+  plot(tb, main=main)
   invisible (tb)
 }
 
@@ -403,7 +403,7 @@ assign_time_to_raster = function (raster, format= "%Y-%m-%d") {
 }
 
 
-plot_ts_modis_coord = function (raster, coord) {
+plot_ts_modis_coord = function (raster, coord, main=NULL) {
     coord = parse_coord_string(coord)
 
     #  generate time axis if needed
@@ -429,7 +429,7 @@ plot_ts_modis_coord = function (raster, coord) {
     u = unlist(raster[cell_num])
     u[u < -0.25] = NA  #  -0.3 is nodata
     z = zoo::zoo(u, dates)
-    plot (z, xlab = "Index", ylab = "Date")
+    plot (z, xlab = "Index", ylab = "Date", main=main)
 
     #  do we have any NAs?  highlight vals before and after
     na_prev_z = is.na(c(FALSE, z[-length(z)]))
