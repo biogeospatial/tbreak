@@ -9,7 +9,7 @@ library("terra")
 library("ncdf4")
 
 
-calc_and_plot_beast_modis_coord = function (raster, coord, start_time=NULL, ...) {
+calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_time=NULL, ...) {
   coord = parse_coord_string(coord)
 
   #  generate time axis if needed
@@ -52,7 +52,12 @@ calc_and_plot_beast_modis_coord = function (raster, coord, start_time=NULL, ...)
 
   o = Rbeast::beast123 (Y, metadata = metadata, extra = extra, ...)
 
-  plot (o)
+  if (!is.na(o$R2)) {
+    plot(o, main = main)
+  } else {
+    message ("Unable to fit model, no plot available")
+  }
+
   return (o)
 }
 
@@ -427,6 +432,12 @@ plot_bfast_modis_coord = function (raster, coord, h=0.15, main=NULL) {
   }
   u = unlist(raster[cell_num])
   u[u < -0.25] = NA
+
+  if (sum(is.na(u)) > (length(u) / 10)) {
+    message ("More than 10% of records are NA, skipping bfast generation")
+    return()
+  }
+
   t2 = bfast::bfastts(u, dates, type = '16-day')
   tb = bfast::bfast(t2, h=h)
   plot(tb, main=main)
@@ -477,7 +488,7 @@ plot_ts_modis_coord = function (raster, coord, main=NULL) {
     u = unlist(raster[cell_num])
     u[u < -0.25] = NA  #  -0.3 is nodata
     z = zoo::zoo(u, dates)
-    plot (z, xlab = "Index", ylab = "Date", main=main)
+    plot (z, xlab = "Index", ylab = "Date", main = main)
 
     #  do we have any NAs?  highlight vals before and after
     na_prev_z = is.na(c(FALSE, z[-length(z)]))
