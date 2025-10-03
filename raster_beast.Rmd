@@ -70,29 +70,11 @@ plot (raster[[1]], main = as.character(t1))
 coord_string = ""
 
 ```
+Generate a beast result for a single cell and plot it.  
 
-Now run beast on the loaded data set. This might take a while.
+This is useful when the raster is too large to run the beast analysis on. 
 
-```{r}
-
-#  Try to gracefully handle errors without overwriting 
-#  a pre-existing beast_raster object if we fail.
-#  That said, stopping the session kills it all anyway.
-beast_result_tmp = tryCatch({
-    tbreak:::beast_modis (raster)
-}, error = function(e) {
-    stop ("Unable to process data")
-})
-
-beast_result = beast_result_tmp
-plot (beast_result)
-rm (beast_result_tmp)
-
-
-```
-
-Some interaction. Rerun this step each time you want to plot a different
-location.
+Rerun this and the next few steps with different coords to explore your data.
 
 The coordinates to enter are obtained by right clicking on the map in
 ArcGIS and choosing "Copy Coordinates".
@@ -106,22 +88,24 @@ system or WGS 1984. These can be checked and set under the map's properties
 The display units can also be changed by clicking the drop down to the
 right of the coordinate at the bottom of the map pane.
 
+
 ```{r}
 
-
 response = svDialogs::dlg_input(
-  message = "Enter a coordinate from ArcGIS (MODIS or WGS84 coord sys)",
+  message = "Enter a coordinate from ArcGIS (MODIS or WGS84 coord sys)", 
   default = coord_string
 )
 
 resp = response$res
 if (length (resp)) {
   coord_string = resp
-  tbreak:::plot_beast_modis_coord (beast_result, coord = coord_string)
+  ts_res = tbreak:::calc_and_plot_beast_modis_coord (raster, coord = coord_string)
 }
 
 
 ```
+
+
 Generate a bfast output for the same coord, or a different one if preferred.
 
 ```{r}
@@ -161,26 +145,50 @@ if (length (resp)) {
 
 ```
 
-Generate a single beast result and plot it.  
 
-This is useful when the raster is too large to run the beast analysis on. 
+Now run beast on the loaded raster. This might take a while.
 
 ```{r}
 
+#  Try to gracefully handle errors without overwriting 
+#  a pre-existing beast_raster object if we fail.
+#  That said, stopping the session kills it all anyway.
+beast_result_tmp = tryCatch({
+    tbreak:::beast_modis (raster)
+}, error = function(e) {
+    stop ("Unable to process data")
+})
+
+beast_result = beast_result_tmp
+plot (beast_result)
+rm (beast_result_tmp)
+
+```
+
+
+Plot the result for one cell from a "beasted" raster.  
+
+This is probably redundant since you can generate the plot from the
+raster directly but does avoid some recalculation.
+
+
+
+```{r}
+
+
 response = svDialogs::dlg_input(
-  message = "Enter a coordinate from ArcGIS (MODIS or WGS84 coord sys)", 
+  message = "Enter a coordinate from ArcGIS (MODIS or WGS84 coord sys)",
   default = coord_string
 )
 
 resp = response$res
 if (length (resp)) {
   coord_string = resp
-  ts_res = tbreak:::calc_and_plot_beast_modis_coord (raster, coord = coord_string)
+  tbreak:::plot_beast_modis_coord (beast_result, coord = coord_string)
 }
 
 
 ```
-
 
 Now export the beast results to a set of rasters.
 
