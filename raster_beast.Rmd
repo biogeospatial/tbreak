@@ -161,6 +161,27 @@ if (length (resp)) {
 
 ```
 
+Generate a single beast result and plot it.  
+
+This is useful when the raster is too large to run the beast analysis on. 
+
+```{r}
+
+response = svDialogs::dlg_input(
+  message = "Enter a coordinate from ArcGIS (MODIS or WGS84 coord sys)", 
+  default = coord_string
+)
+
+resp = response$res
+if (length (resp)) {
+  coord_string = resp
+  ts_res = tbreak:::calc_and_plot_beast_modis_coord (raster, coord = coord_string)
+}
+
+
+```
+
+
 Now export the beast results to a set of rasters.
 
 ```{r}

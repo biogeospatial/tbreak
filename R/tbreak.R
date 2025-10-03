@@ -8,6 +8,54 @@ library("parzer")
 library("terra")
 library("ncdf4")
 
+
+calc_and_plot_beast_modis_coord = function (raster, coord, start_time=NULL, ...) {
+  coord = parse_coord_string(coord)
+
+  #  generate time axis if needed
+  #  assumes form 2024-01-24 somewhere in band name
+  dates = time(raster)
+  if (any (is.na(dates))) {
+    dates = names(raster)
+    pattern = r"(\b\d{4}-\d{2}-\d{2}\b)"
+    m = regexpr(pattern, dates)
+    dates = regmatches(dates, m)
+    dates = strptime(dates, "%Y-%m-%d")
+  }
+
+  cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
+  if (is.na(cell_num)) {
+    stop ("Coord does not intersect the raster")
+  }
+  Y = unlist(raster[cell_num])
+  Y[Y < -0.25] = NA
+
+  metadata = list(
+    time             = dates,
+    isRegularOrdered = FALSE,    # IRREGULAR input
+    #whichDimIsTime   = 3,        # 437 is the ts length, so set it to '3' here.
+    # time$datestr     = datestr,  # date info is contained in the file names
+    # time$strfmt      = 'LT05_018032_20080311.yyyy-mm-dd',
+    #deltaTime        = 16/365,     # MODIS data are 16 days
+    deltaTime        = 1/12,
+    #    period = 32/365
+    period = 1
+    #period           = 16/365
+    #startTime        = ifelse (is.null(start_time, time(tmp_ras)[1], as.Date(start_time)))
+  )
+
+  #  minimal for now
+  extra = list (
+    numThreadsPerCPU = 3,
+    numParThreads    = 30
+  )
+
+  o = Rbeast::beast123 (Y, metadata = metadata, extra = extra, ...)
+
+  plot (o)
+  return (o)
+}
+
 beast_modis = function (raster, start_time = NULL, ...) {
 
   #  work on a copy in case it is not in memory
