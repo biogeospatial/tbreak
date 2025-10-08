@@ -85,7 +85,7 @@ get_modis_ts = function (
     progress = progress
   )
   df_r = mt_to_terra(df = df, reproject = FALSE)
-  time(df_r) = as.Date(strptime (names(df_r), "%Y-%m-%d"))
+  terra::time(df_r) = as.Date(strptime (names(df_r), "%Y-%m-%d"))
   df_r[df_r < -0.2] = NA
 
   if (!no_export) {
