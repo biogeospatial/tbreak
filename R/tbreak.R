@@ -36,8 +36,8 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
     #whichDimIsTime   = 3,        # 437 is the ts length, so set it to '3' here.
     # time$datestr     = datestr,  # date info is contained in the file names
     # time$strfmt      = 'LT05_018032_20080311.yyyy-mm-dd',
-    #deltaTime        = 16/365,     # MODIS data are 16 days
-    deltaTime        = 1/12,
+    deltaTime        = 16/365,     # MODIS data are 16 days
+    #deltaTime        = 1/12,
     #    period = 32/365
     period = 1
     #period           = 16/365
@@ -91,8 +91,8 @@ beast_modis = function (raster, start_time = NULL, ...) {
     whichDimIsTime   = 3,        # 437 is the ts length, so set it to '3' here.
     # time$datestr     = datestr,  # date info is contained in the file names
     # time$strfmt      = 'LT05_018032_20080311.yyyy-mm-dd',
-    #deltaTime        = 16/365,     # MODIS data are 16 days
-    deltaTime        = 1/12,
+    deltaTime        = 16/365,     # MODIS data are 16 days
+    #deltaTime        = 1/12,
     #    period = 32/365
     period = 1
     #period           = 16/365
@@ -487,6 +487,12 @@ plot_ts_modis_coord = function (raster, coord, main=NULL) {
     }
     u = unlist(raster[cell_num])
     u[u < -0.25] = NA  #  -0.3 is nodata
+
+    if (all(is.na(u))) {
+      message ("NA values only, skipping plot")
+      return()
+    }
+
     z = zoo::zoo(u, dates)
     plot (z, xlab = "Index", ylab = "Date", main = main)
 
