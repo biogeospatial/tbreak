@@ -15,4 +15,7 @@ Imports:
     ncdf4,
     lubridate,
     methods,
-    parzer
+    parzer,
+    bfast,
+    stlplus,
+    zoo
