@@ -7,6 +7,7 @@ library("methods")
 library("parzer")
 library("terra")
 library("ncdf4")
+library("sf")
 
 
 calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_time=NULL, ...) {
@@ -146,9 +147,7 @@ parse_coord_string = function (coord) {
     x = parse_lon(xy[1])
     y = parse_lat(xy[2])
     point = st_sfc(st_point(c(x,y)), crs = 4326)
-    m = r"(PROJCS["modis_sinusoidal",GEOGCS["GCS_Unknown_datum_based_upon_the_custom_spheroid",DATUM["D_Not_specified_based_on_custom_spheroid",SPHEROID["Custom_spheroid",6371007.181,0.0]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Sinusoidal"],PARAMETER["False_Easting",0.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",0.0],UNIT["Meter",1.0]])"
-    crs_modis_sinusoidal = st_crs(m)
-    point2 = st_transform (point, crs_modis_sinusoidal)
+    point2 = st_transform (point, modis_crs())
     p = st_coordinates(point2)
     return (c(p[1], p[2]))
   }
@@ -508,3 +507,31 @@ plot_ts_modis_coord = function (raster, coord, main=NULL) {
     invisible(z)
 }
 
+
+point_to_cell_polygon = function (coord, raster) {
+  coord = parse_coord_string(coord)
+
+  c = res(raster)
+  e = ext(raster)
+
+  x1 = floor ((coord[1] - e$xmin) / c[1]) * c[1] + e$xmin
+  x2 = x1 + c[1]
+  y1 = floor ((coord[2] - e$ymin) / c[2]) * c[2] + e$ymin
+  y2 = y1 + c[2]
+
+  pol = st_polygon(
+    list(
+      cbind(
+        c(x1,x1,x2,x2,x1),
+        c(y1,y2,y2,y1,y1)
+      )
+    )
+  )
+  pol = st_sfc(pol, crs=modis_crs())
+  pol
+}
+
+modis_crs = function () {
+  m = r"(PROJCS["modis_sinusoidal",GEOGCS["GCS_Unknown_datum_based_upon_the_custom_spheroid",DATUM["D_Not_specified_based_on_custom_spheroid",SPHEROID["Custom_spheroid",6371007.181,0.0]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Sinusoidal"],PARAMETER["False_Easting",0.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",0.0],UNIT["Meter",1.0]])"
+  st_crs(m)
+}

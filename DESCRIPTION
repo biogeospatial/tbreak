@@ -18,4 +18,5 @@ Imports:
     parzer,
     bfast,
     stlplus,
-    zoo
+    zoo,
+    sf
