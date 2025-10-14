@@ -286,6 +286,44 @@ beast_time_to_date = function (x) {
   as.Date(paste(floor(x), ceiling((x - floor (x))*365), sep=""), format="%Y%j")
 }
 
+#  need to do one part at a time
+rasterise_tiled_beast = function (tb) {
+  if (is.null(tb$index)) {
+    stop ("An index must be set on the tiled beast object")
+  }
+
+  #b$time_as_date = lubridate::date_decimal (b$time)
+
+  results = list ()
+
+  max_idx = max(tb$index$beast_id)
+
+  for (idx in tb$index$beast_id) {
+    b = tb$beasts[[idx]]
+    for (component in c("trend", "season")) {
+      for (subcomponent in names(b[[component]])) {
+        if (!is.null (b[[component]][[subcomponent]])) {
+          message (sprintf("tile %s of %s: %s: %s", idx, max_idx, component, subcomponent))
+          label = sprintf ("%s_%s", component, subcomponent)
+          results[[label]][[idx]] = beastbit2raster(b, component, subcomponent)
+        }
+      }
+    }
+    for (component in c("R2", "RMSE", "sig2", "marg_lik")) {
+      message (sprintf("tile %s of %s: %s", idx, max_idx, component))
+      label = component
+      results[[label]][[idx]] = beastbit2raster(b, component)
+    }
+  }
+
+  #  now make mosaics from spat raster collections
+  for (name in names(results)) {
+    results[[name]] = terra::mosaic(terra::sprc(results[[name]]))
+  }
+
+  results
+}
+
 rasterise_beast = function (b) {
   if (is.null(b$ext)) {
     stop ("An extent must be set on the beast object")
@@ -294,7 +332,7 @@ rasterise_beast = function (b) {
   b$time_as_date = lubridate::date_decimal (b$time)
 
   results = list ()
-  trend_ncp = beastbit2raster (b, "trend", "ncp")
+  #trend_ncp = beastbit2raster (b, "trend", "ncp")
 
   for (component in c("trend", "season")) {
     for (subcomponent in names(b[[component]])) {
