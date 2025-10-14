@@ -9,10 +9,7 @@ library("terra")
 library("ncdf4")
 library("sf")
 
-
-calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_time=NULL, ...) {
-  coord = parse_coord_string(coord)
-
+get_date_vec_from_raster = function (raster) {
   #  generate time axis if needed
   #  assumes form 2024-01-24 somewhere in band name
   dates = time(raster)
@@ -23,6 +20,13 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
     dates = regmatches(dates, m)
     dates = strptime(dates, "%Y-%m-%d")
   }
+  return(dates)
+}
+
+calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_time=NULL, ...) {
+  coord = parse_coord_string(coord)
+
+  dates = get_date_vec_from_raster(raster)
 
   cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
   if (is.na(cell_num)) {
@@ -70,15 +74,7 @@ beast_modis = function (raster, start_time = NULL, ...) {
   tmp_ras = toMemory(tmp_ras)   # To use beast, make sure all the data is read into memory
   dims    = dim(tmp_ras)
 
-  #  generate time axis if needed
-  #  assumes form 2024-01-24 somewhere in band name
-  if (all (is.na(time(tmp_ras)))) {
-    dates = names(tmp_ras)
-    pattern = r"(\b\d{4}-\d{2}-\d{2}\b)"
-    m = regexpr(pattern, dates)
-    dates = regmatches(dates, m)
-    terra::time(tmp_ras) = strptime(dates, "%Y-%m-%d")
-  }
+  dates = get_date_vec_from_raster(raster)
 
   # Y = values(tmp_ras)
   #dim(Y)   = dims[c(2,1,3)]    # Assign column-major dim expected by Rbeast
@@ -87,7 +83,7 @@ beast_modis = function (raster, start_time = NULL, ...) {
   dim(Y)   = dims[c(1,2,3)]  #  could just use dims directly...
 
   metadata = list(
-    time             = time(tmp_ras),
+    time             = dates,
     isRegularOrdered = FALSE,    # IRREGULAR input
     whichDimIsTime   = 3,        # 437 is the ts length, so set it to '3' here.
     # time$datestr     = datestr,  # date info is contained in the file names
@@ -129,7 +125,6 @@ parse_coord_string = function (coord) {
   xy = stri_split_regex(coord, "\\s")[[1]][1:2]
   xy = stri_replace_all_fixed (xy, replacement="", pattern=",")
 
-
   if (!in_metres) {
     library("parzer")
     library("sf")
@@ -153,6 +148,9 @@ parse_coord_string = function (coord) {
   }
 
   x_hemi = stri_extract(xy[1], regex = "[NESW]")
+  if (is.na(x_hemi)) {
+    x_hemi = "E"
+  }
   x = stri_replace_all_fixed(xy[1], replacement = "", pattern = x_hemi)
   x = as.numeric(x)
   if (x_hemi == "W") {
@@ -160,6 +158,9 @@ parse_coord_string = function (coord) {
   }
 
   y_hemi = stri_extract(xy[2], regex = "[NESW]")
+  if (is.na(y_hemi)) {
+    y_hemi = "N"
+  }
   y = stri_replace_all_fixed(xy[2], replacement = "", pattern = y_hemi)
   y = as.numeric(y)
   if (y_hemi == "S") {
