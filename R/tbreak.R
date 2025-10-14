@@ -72,12 +72,13 @@ beast_modis = function (raster, start_time = NULL, ...) {
 
   #  generate time axis if needed
   #  assumes form 2024-01-24 somewhere in band name
+  dates = time(raster)
   if (all (is.na(time(tmp_ras)))) {
     dates = names(tmp_ras)
     pattern = r"(\b\d{4}-\d{2}-\d{2}\b)"
     m = regexpr(pattern, dates)
     dates = regmatches(dates, m)
-    terra::time(tmp_ras) = strptime(dates, "%Y-%m-%d")
+    dates = strptime(dates, "%Y-%m-%d")
   }
 
   # Y = values(tmp_ras)
@@ -87,7 +88,7 @@ beast_modis = function (raster, start_time = NULL, ...) {
   dim(Y)   = dims[c(1,2,3)]  #  could just use dims directly...
 
   metadata = list(
-    time             = time(tmp_ras),
+    time             = dates,
     isRegularOrdered = FALSE,    # IRREGULAR input
     whichDimIsTime   = 3,        # 437 is the ts length, so set it to '3' here.
     # time$datestr     = datestr,  # date info is contained in the file names
