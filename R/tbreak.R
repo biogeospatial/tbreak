@@ -66,6 +66,45 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
   return (o)
 }
 
+tiled_beast_modis = function (raster, tile_size=64, start_time = NULL, ...) {
+  res = res(raster)[1:2] * tile_size
+  ext = ext(raster)
+  nrows = ceiling((ext[2] - ext[1]) / res[2])
+  ncols = ceiling((ext[4] - ext[3]) / res[1])
+  #  way too many args but terra does odd things at the moment
+  #  and this does what we want
+  rr = rast(
+    nrows = nrows,
+    ncols = ncols,
+    xmin  = ext[1],
+    xmax  = ext[2],
+    ymin  = ext[3],
+    ymax  = ext[4],
+    crs   = crs(raster),
+    res   = res(raster)[1:2] * tile_size
+  )
+  v = as.polygons(rr)
+  v = terra::intersect(v, ext(raster))
+  v$beast_id = 1:nrow(v)
+
+  rm (rr)
+  gc()
+
+  b = list()
+  subset = 1:nrow(v)
+  #subset = 1:3  #  for debug
+  for (i in v$beast_id[subset]) {
+    if (is.na(i)) {break}  #  for debug
+    r = crop(raster, v[i,], ext=TRUE)
+    b[[i]] = beast_modis(r, start_time=start_time, ...)
+  }
+
+  #  maybe convert v to an sf object?
+  bm = list (index = v, beasts = b)
+
+  return (bm)
+}
+
 beast_modis = function (raster, start_time = NULL, ...) {
 
   #  work on a copy in case it is not in memory
