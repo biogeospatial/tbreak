@@ -353,6 +353,41 @@ rasterise_beast = function (b) {
   results
 }
 
+get_beast_component_list = function (b) {
+
+  results = list()
+
+  if (!is.null(b$beasts)) {
+    #  tiled beast
+    #  loop over the lot because one day
+    #  we might store nulls for nodata blocks,
+    #  but break once we have found something
+    for (idx in b$index$beast_id) {
+      bb = b$beasts[[idx]]
+      r = get_beast_component_list(bb)
+      results = c(results, r)
+      if (length(names(results)) > 0) {
+        break
+      }
+    }
+    return (results)
+  }
+
+  for (component in c("trend", "season")) {
+    for (subcomponent in names(b[[component]])) {
+      if (!is.null (b[[component]][[subcomponent]])) {
+        results[[component]][[subcomponent]] = TRUE
+      }
+    }
+  }
+  for (component in c("R2", "RMSE", "sig2", "marg_lik")) {
+    results[[component]] = TRUE
+  }
+
+
+  results
+}
+
 beastbit2raster = function (b, component = "trend", subcomponent = "ncp", template=NULL) {
   if (class(b) != "beast") {
     stop ("Need an Rbeast result")
