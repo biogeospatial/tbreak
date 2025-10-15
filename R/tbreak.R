@@ -449,7 +449,7 @@ beastbit2raster = function (b, component = "trend", subcomponent = "ncp", templa
 
       #  These should be temporal data.
       if (subcomponent %in% temporal_subcomponents && nbands == length(b$time)) {
-        message (sprintf ("Temporal data for %s, %s", component, subcomponent))
+        #message (sprintf ("Temporal data for %s, %s", component, subcomponent))
         t = b$time_as_date  #  use pre-calculated if exists
         if (is.null(t)) {
           t = lubridate::date_decimal (b$time)
@@ -515,6 +515,67 @@ export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
     }
   }
   invisible(list)
+}
+
+export_tiled_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
+
+  name_list = get_beast_component_list(b)
+  message ("Exporting now")
+
+  outputs = character()
+
+  for (component_name in names(name_list)) {
+    subcomponent = name_list[[component_name]]
+    if (is.list(subcomponent)) {
+      for (subcomponent_name in names(subcomponent)) {
+        name = sprintf ("%s_%s", component_name, subcomponent_name)
+        pfx = file.path (dir, paste0(prefix, name))
+        outfile = paste0 (pfx, ".tif")
+        message (outfile)
+
+        rasters = list()
+        for (idx in b$index$beast_id) {
+          rr = beastbit2raster(b$beasts[[idx]], component_name, subcomponent_name)
+          if (max(minmax(rr)) == Inf) {  #  terra::max does not exist at the moment
+            rr[rr == Inf] = NA
+          }
+          rasters[[idx]] = rr
+        }
+        r = mosaic(sprc(rasters))
+
+        writeRaster(r, outfile, overwrite=overwrite)
+        outputs = c(outputs, outfile)
+
+        #  also dump netCDF for temporal data
+        if (!anyNA(terra::time(r))) {
+          outfile = paste0 (pfx, ".nc")
+          message (outfile)
+          writeCDF(r, outfile, overwrite=overwrite)
+          outputs = c(outputs, outfile)
+        }
+      }
+    }
+    else {
+      name = sprintf ("%s", component_name)
+      pfx = file.path (dir, paste0(prefix, name))
+      outfile = paste0 (pfx, ".tif")
+      message (outfile)
+
+      rasters = list()
+      for (idx in b$index$beast_id) {
+        rasters[[idx]] = beastbit2raster(b$beasts[[idx]], component_name)
+      }
+      r = mosaic(sprc(rasters))
+      if (max(minmax(raster)) == Inf) {
+        r[r == Inf] = NA
+      }
+
+      writeRaster(r, outfile, overwrite=overwrite)
+      outputs = c(outputs, outfile)
+    }
+  }
+
+  invisible(outputs)
 }
 
 
