@@ -357,7 +357,7 @@ get_beast_component_list = function (b) {
 
   results = list()
 
-  if (!is.null(b$beasts)) {
+  if (isa_tiled_beast(b)) {
     #  tiled beast
     #  loop over the lot because one day
     #  we might store nulls for nodata blocks,
@@ -497,7 +497,19 @@ beastbit2raster = function (b, component = "trend", subcomponent = "ncp", templa
   r
 }
 
+#  pretty basic check until we develop a tiled beast class
+isa_tiled_beast = function(b) {
+  if (is.null(b$index) && is.null(b$beasts)) {
+    return (FALSE)
+  }
+  return (all(sapply (bb$beasts, FUN=function(x){is.null(x) || class(x)=='beast'})))
+}
+
 export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
+  if (isa_tiled_beast(b)) {
+    return (export_tiled_beast_rasters(b, dir, prefix, overwrite))
+  }
+
   list = rasterise_beast(b)
   message ("Exporting now")
   for (name in names(list)) {
