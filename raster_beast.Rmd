@@ -159,7 +159,7 @@ beast_result_tmp = tryCatch(
   {
     tbreak:::tiled_beast_modis (raster)
   }, error = function(e) {
-    stop ("Unable to process data")
+    stop (sprintf ("Unable to process data\n%s", e))
   }
 )
 

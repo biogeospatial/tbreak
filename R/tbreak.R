@@ -108,6 +108,10 @@ tiled_beast_modis = function (raster, tile_size=64, start_time = NULL, ...) {
 
 beast_modis = function (raster, start_time = NULL, ...) {
 
+  if (dim(raster)[3] < 20) {
+    stop ("Fewer than 20 time steps in data set")
+  }
+
   #  work on a copy in case it is not in memory
   #  then the copy should be GC'd when that is called
   tmp_ras = raster
