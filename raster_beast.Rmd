@@ -157,7 +157,7 @@ Plotted result is the number of trend change points across the raster.
 #  That said, stopping the session kills it all anyway.
 beast_result_tmp = tryCatch(
   {
-    tbreak:::beast_modis (raster)
+    tbreak:::tiled_beast_modis (raster)
   }, error = function(e) {
     stop ("Unable to process data")
   }
@@ -199,7 +199,7 @@ response = svDialogs::dlg_input(
 resp = response$res
 if (length (resp)) {
   coord_string = resp
-  tbreak:::plot_beast_modis_coord (beast_result, coord = coord_string)
+  plot_beast_modis_coord (beast_result, coord = coord_string)
 }
 
 

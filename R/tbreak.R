@@ -86,7 +86,7 @@ tiled_beast_modis = function (raster, tile_size=64, start_time = NULL, ...) {
   v = as.polygons(rr)
   v = terra::intersect(v, ext(raster))
   v$beast_id = 1:nrow(v)
-  v = st_as_sf(v)  #  make it an sf obect
+  v = st_as_sf(v)  #  make it an sf object
 
   rm (rr)
   gc()
@@ -217,7 +217,7 @@ ext_from_arcgis_coord = function (coord, xoff=100000, yoff=-100000) {
   x2 = coord[1] + xoff
   y1 = coord[2]
   y2 = coord[2] + yoff
-  ext(min(x1, x2), max(x1, x2), min(y1, y2), max(y1, y2))
+  terra::ext(min(x1, x2), max(x1, x2), min(y1, y2), max(y1, y2))
 }
 
 #  convert a coordinate copied from ArcGIS to a format usable with terra
@@ -227,7 +227,7 @@ coord2idx_rbeast = function (b, coord) {
   x = coord[1]
   y = coord[2]
 
-  extent = ext(b$ext)
+  extent = terra::ext(b$ext)
 
   if (x < extent$xmin || x >= extent$xmax) {
     stop ("X coord is outside data set extent")
@@ -248,6 +248,13 @@ coord2idx_rbeast = function (b, coord) {
 
 
 plot_beast_modis_coord = function (b, coord, t=FALSE, main=NULL) {
+
+  if (isa_tiled_beast(b)) {
+    p = st_point (parse_coord_string(coord))
+    target_tile = st_intersects(p, b$index)[[1]]
+    return (plot_beast_modis_coord(b$beasts[[target_tile]], coord, t, main))
+  }
+
   rowcol = coord2idx_rbeast(b, coord)
 
 
