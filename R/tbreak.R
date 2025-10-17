@@ -93,9 +93,11 @@ tiled_beast_modis = function (raster, tile_size=64, start_time = NULL, ...) {
 
   b = list()
   subset = 1:nrow(v)
+  ntiles = nrow(v)
   #subset = 1:3  #  for debug
   for (i in v$beast_id[subset]) {
     if (is.na(i)) {break}  #  for debug
+    message (sprintf("tile %s of %s", i, ntiles))
     r = crop(raster, v[i,], ext=TRUE)
     b[[i]] = beast_modis(r, start_time=start_time, ...)
   }
