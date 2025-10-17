@@ -396,16 +396,13 @@ get_beast_component_list = function (b) {
   results
 }
 
-beastbit2raster = function (b, component = "trend", subcomponent = "ncp", template=NULL) {
+beastbit2raster = function (b, component = "trend", subcomponent = "ncp", inf_to_na=TRUE, template=NULL) {
 
   if (isa_tiled_beast(b)) {
     rasters = list()
 
     for (idx in b$index$beast_id) {
-      rr = beastbit2raster(b$beasts[[idx]], component, subcomponent, template)
-      if (max(minmax(rr)) == Inf) {  #  terra::max does not exist at the moment
-        rr[rr == Inf] = NA
-      }
+      rr = beastbit2raster(b$beasts[[idx]], component, subcomponent, inf_to_na, template)
       rasters[[idx]] = rr
     }
     return(mosaic(sprc(rasters)))
@@ -516,6 +513,10 @@ beastbit2raster = function (b, component = "trend", subcomponent = "ncp", templa
     names(r) = component
   }
 
+  if (inf_to_na && max(minmax(r)) == Inf) {
+    r[r == Inf] = NA
+  }
+
   r
 }
 
@@ -545,9 +546,6 @@ export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
         message (outfile)
 
         r = beastbit2raster(b, component_name, subcomponent_name)
-        if (max(minmax(raster)) == Inf) {
-          r[r == Inf] = NA
-        }
 
         writeRaster(r, outfile, overwrite=overwrite)
         outputs = c(outputs, outfile)
@@ -568,9 +566,6 @@ export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
       message (outfile)
 
       r = beastbit2raster(b, component_name)
-      if (max(minmax(raster)) == Inf) {
-        r[r == Inf] = NA
-      }
 
       writeRaster(r, outfile, overwrite=overwrite)
       outputs = c(outputs, outfile)
