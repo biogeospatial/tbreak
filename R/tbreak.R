@@ -20,7 +20,7 @@ get_date_vec_from_raster = function (raster) {
     dates = regmatches(dates, m)
     dates = strptime(dates, "%Y-%m-%d")
   }
-  return(dates)
+  return(as.Date(dates))
 }
 
 calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_time=NULL, ...) {
@@ -106,7 +106,7 @@ tiled_beast_modis = function (raster, tile_size=64, printParameter=TRUE, start_t
   #  maybe convert v to an sf object?
   bm = list (index = v, beasts = b)
 
-  return (bm)
+  invisible (bm)
 }
 
 beast_modis = function (raster, printParameter=TRUE, start_time = NULL, ...) {
@@ -162,7 +162,7 @@ beast_modis = function (raster, printParameter=TRUE, start_time = NULL, ...) {
   o$crs = crs(raster)
 
   gc()
-  return (o)
+  invisible (o)
 }
 
 parse_coord_string = function (coord) {
