@@ -397,6 +397,20 @@ get_beast_component_list = function (b) {
 }
 
 beastbit2raster = function (b, component = "trend", subcomponent = "ncp", template=NULL) {
+
+  if (isa_tiled_beast(b)) {
+    rasters = list()
+
+    for (idx in b$index$beast_id) {
+      rr = beastbit2raster(b$beasts[[idx]], component, subcomponent, template)
+      if (max(minmax(rr)) == Inf) {  #  terra::max does not exist at the moment
+        rr[rr == Inf] = NA
+      }
+      rasters[[idx]] = rr
+    }
+    return(mosaic(sprc(rasters)))
+  }
+
   if (class(b) != "beast") {
     stop ("Need an Rbeast result")
   }
@@ -507,37 +521,14 @@ beastbit2raster = function (b, component = "trend", subcomponent = "ncp", templa
 
 #  pretty basic check until we develop a tiled beast class
 isa_tiled_beast = function(b) {
-  if (is.null(b$index) && is.null(b$beasts)) {
+  if (is.atomic(b) || (is.null(b$index) && is.null(b$beasts))) {
     return (FALSE)
   }
-  return (all(sapply (bb$beasts, FUN=function(x){is.null(x) || class(x)=='beast'})))
+  return (all(sapply (b$beasts, FUN=function(x){is.null(x) || class(x)=='beast'})))
 }
+
 
 export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
-  if (isa_tiled_beast(b)) {
-    return (export_tiled_beast_rasters(b, dir, prefix, overwrite))
-  }
-
-  list = rasterise_beast(b)
-  message ("Exporting now")
-  for (name in names(list)) {
-    pfx = file.path (dir, paste0(prefix, name))
-    outfile = paste0 (pfx, ".tif")
-    message (outfile)
-    r = list[[name]]
-    r[r == Inf] = NA
-    writeRaster(list[[name]], outfile, overwrite=overwrite)
-    #  also dump netCDF for temporal data
-    if (!anyNA(terra::time(r))) {
-      outfile = paste0 (pfx, ".nc")
-      message (outfile)
-      writeCDF(list[[name]], outfile, overwrite=overwrite)
-    }
-  }
-  invisible(list)
-}
-
-export_tiled_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
 
   name_list = get_beast_component_list(b)
   message ("Exporting now")
@@ -553,15 +544,10 @@ export_tiled_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
         outfile = paste0 (pfx, ".tif")
         message (outfile)
 
-        rasters = list()
-        for (idx in b$index$beast_id) {
-          rr = beastbit2raster(b$beasts[[idx]], component_name, subcomponent_name)
-          if (max(minmax(rr)) == Inf) {  #  terra::max does not exist at the moment
-            rr[rr == Inf] = NA
-          }
-          rasters[[idx]] = rr
+        r = beastbit2raster(b, component_name, subcomponent_name)
+        if (max(minmax(raster)) == Inf) {
+          r[r == Inf] = NA
         }
-        r = mosaic(sprc(rasters))
 
         writeRaster(r, outfile, overwrite=overwrite)
         outputs = c(outputs, outfile)
@@ -581,11 +567,7 @@ export_tiled_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
       outfile = paste0 (pfx, ".tif")
       message (outfile)
 
-      rasters = list()
-      for (idx in b$index$beast_id) {
-        rasters[[idx]] = beastbit2raster(b$beasts[[idx]], component_name)
-      }
-      r = mosaic(sprc(rasters))
+      r = beastbit2raster(b, component_name)
       if (max(minmax(raster)) == Inf) {
         r[r == Inf] = NA
       }

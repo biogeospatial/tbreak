@@ -167,7 +167,6 @@ beast_result = beast_result_tmp
 rm (beast_result_tmp)
 
 r2_raster = beastbit2raster(beast_result, "R2")
-r2_raster[r2_raster > 1] = NA
 plot (r2_raster, main = "R^2")
 
 ncps_raster = beastbit2raster(beast_result, "season", "ncp")
@@ -216,7 +215,7 @@ output_prefix = svDialogs::dlg_input(message = "Filename prefix", default="")$re
 save_flag      = svDialogs::dlg_list  (choices = c("No", "Yes"), title = "Overwrite existing files?")$res
 overwrite_flag = ifelse (length(save_flag) > 0 && save_flag == "Yes", TRUE, FALSE)
 
-b_rasters = tbreak:::export_beast_rasters(beast_result, output_dir, output_prefix, overwrite_flag)
+b_rasters = export_beast_rasters(beast_result, output_dir, output_prefix, overwrite_flag)
 
 
 ```
