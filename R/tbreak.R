@@ -9,7 +9,7 @@ library("terra")
 library("ncdf4")
 library("sf")
 
-get_date_vec_from_raster = function (raster) {
+get_date_vec_from_raster_names = function (raster) {
   #  generate time axis if needed
   #  assumes form 2024-01-24 somewhere in band name
   dates = time(raster)
@@ -26,7 +26,7 @@ get_date_vec_from_raster = function (raster) {
 calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_time=NULL, ...) {
   coord = parse_coord_string(coord)
 
-  dates = get_date_vec_from_raster(raster)
+  dates = get_date_vec_from_raster_names(raster)
 
   cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
   if (is.na(cell_num)) {
@@ -121,7 +121,7 @@ beast_modis = function (raster, printParameter=TRUE, start_time = NULL, ...) {
   tmp_ras = toMemory(tmp_ras)   # To use beast, make sure all the data is read into memory
   dims    = dim(tmp_ras)
 
-  dates = get_date_vec_from_raster(raster)
+  dates = get_date_vec_from_raster_names(raster)
 
   # Y = values(tmp_ras)
   #dim(Y)   = dims[c(2,1,3)]    # Assign column-major dim expected by Rbeast
