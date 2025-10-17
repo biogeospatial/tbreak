@@ -51,8 +51,8 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
 
   #  minimal for now
   extra = list (
-    numThreadsPerCPU = 3,
-    numParThreads    = 30
+    # numThreadsPerCPU = 3,
+    # numParThreads    = 30
   )
 
   o = Rbeast::beast123 (Y, metadata = metadata, extra = extra, ...)
@@ -145,8 +145,8 @@ beast_modis = function (raster, printParameter=TRUE, start_time = NULL, ...) {
 
   #  minimal for now
   extra = list (
-    numThreadsPerCPU = 3,
-    numParThreads    = 30,
+    #numThreadsPerCPU = 3,
+    #numParThreads    = 30,
     printParameter=printParameter
   )
 
