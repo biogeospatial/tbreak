@@ -66,7 +66,53 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
   return (o)
 }
 
+tiled_beast_modis = function (raster, tile_size=64, start_time = NULL, ...) {
+  res = res(raster)[1:2] * tile_size
+  ext = ext(raster)
+  nrows = ceiling((ext[2] - ext[1]) / res[2])
+  ncols = ceiling((ext[4] - ext[3]) / res[1])
+  #  way too many args but terra does odd things at the moment
+  #  and this does what we want
+  rr = rast(
+    nrows = nrows,
+    ncols = ncols,
+    xmin  = ext[1],
+    xmax  = ext[2],
+    ymin  = ext[3],
+    ymax  = ext[4],
+    crs   = crs(raster),
+    res   = res(raster)[1:2] * tile_size
+  )
+  v = as.polygons(rr)
+  v = terra::intersect(v, ext(raster))
+  v$beast_id = 1:nrow(v)
+  v = st_as_sf(v)  #  make it an sf object
+
+  rm (rr)
+  gc()
+
+  b = list()
+  subset = 1:nrow(v)
+  ntiles = nrow(v)
+  #subset = 1:3  #  for debug
+  for (i in v$beast_id[subset]) {
+    if (is.na(i)) {break}  #  for debug
+    message (sprintf("tile %s of %s", i, ntiles))
+    r = crop(raster, v[i,], ext=TRUE)
+    b[[i]] = beast_modis(r, start_time=start_time, ...)
+  }
+
+  #  maybe convert v to an sf object?
+  bm = list (index = v, beasts = b)
+
+  return (bm)
+}
+
 beast_modis = function (raster, start_time = NULL, ...) {
+
+  if (dim(raster)[3] < 20) {
+    stop ("Fewer than 20 time steps in data set")
+  }
 
   #  work on a copy in case it is not in memory
   #  then the copy should be GC'd when that is called
@@ -177,7 +223,7 @@ ext_from_arcgis_coord = function (coord, xoff=100000, yoff=-100000) {
   x2 = coord[1] + xoff
   y1 = coord[2]
   y2 = coord[2] + yoff
-  ext(min(x1, x2), max(x1, x2), min(y1, y2), max(y1, y2))
+  terra::ext(min(x1, x2), max(x1, x2), min(y1, y2), max(y1, y2))
 }
 
 #  convert a coordinate copied from ArcGIS to a format usable with terra
@@ -187,7 +233,7 @@ coord2idx_rbeast = function (b, coord) {
   x = coord[1]
   y = coord[2]
 
-  extent = ext(b$ext)
+  extent = terra::ext(b$ext)
 
   if (x < extent$xmin || x >= extent$xmax) {
     stop ("X coord is outside data set extent")
@@ -208,6 +254,13 @@ coord2idx_rbeast = function (b, coord) {
 
 
 plot_beast_modis_coord = function (b, coord, t=FALSE, main=NULL) {
+
+  if (isa_tiled_beast(b)) {
+    p = st_point (parse_coord_string(coord))
+    target_tile = st_intersects(p, b$index)[[1]]
+    return (plot_beast_modis_coord(b$beasts[[target_tile]], coord, t, main))
+  }
+
   rowcol = coord2idx_rbeast(b, coord)
 
 
@@ -247,6 +300,44 @@ beast_time_to_date = function (x) {
   as.Date(paste(floor(x), ceiling((x - floor (x))*365), sep=""), format="%Y%j")
 }
 
+#  need to do one part at a time
+rasterise_tiled_beast = function (tb) {
+  if (is.null(tb$index)) {
+    stop ("An index must be set on the tiled beast object")
+  }
+
+  #b$time_as_date = lubridate::date_decimal (b$time)
+
+  results = list ()
+
+  max_idx = max(tb$index$beast_id)
+
+  for (idx in tb$index$beast_id) {
+    b = tb$beasts[[idx]]
+    for (component in c("trend", "season")) {
+      for (subcomponent in names(b[[component]])) {
+        if (!is.null (b[[component]][[subcomponent]])) {
+          message (sprintf("tile %s of %s: %s: %s", idx, max_idx, component, subcomponent))
+          label = sprintf ("%s_%s", component, subcomponent)
+          results[[label]][[idx]] = beastbit2raster(b, component, subcomponent)
+        }
+      }
+    }
+    for (component in c("R2", "RMSE", "sig2", "marg_lik")) {
+      message (sprintf("tile %s of %s: %s", idx, max_idx, component))
+      label = component
+      results[[label]][[idx]] = beastbit2raster(b, component)
+    }
+  }
+
+  #  now make mosaics from spat raster collections
+  for (name in names(results)) {
+    results[[name]] = terra::mosaic(terra::sprc(results[[name]]))
+  }
+
+  results
+}
+
 rasterise_beast = function (b) {
   if (is.null(b$ext)) {
     stop ("An extent must be set on the beast object")
@@ -255,7 +346,7 @@ rasterise_beast = function (b) {
   b$time_as_date = lubridate::date_decimal (b$time)
 
   results = list ()
-  trend_ncp = beastbit2raster (b, "trend", "ncp")
+  #trend_ncp = beastbit2raster (b, "trend", "ncp")
 
   for (component in c("trend", "season")) {
     for (subcomponent in names(b[[component]])) {
@@ -276,7 +367,53 @@ rasterise_beast = function (b) {
   results
 }
 
-beastbit2raster = function (b, component = "trend", subcomponent = "ncp", template=NULL) {
+get_beast_component_list = function (b) {
+
+  results = list()
+
+  if (isa_tiled_beast(b)) {
+    #  tiled beast
+    #  loop over the lot because one day
+    #  we might store nulls for nodata blocks,
+    #  but break once we have found something
+    for (idx in b$index$beast_id) {
+      bb = b$beasts[[idx]]
+      r = get_beast_component_list(bb)
+      results = c(results, r)
+      if (length(names(results)) > 0) {
+        break
+      }
+    }
+    return (results)
+  }
+
+  for (component in c("trend", "season")) {
+    for (subcomponent in names(b[[component]])) {
+      if (!is.null (b[[component]][[subcomponent]])) {
+        results[[component]][[subcomponent]] = TRUE
+      }
+    }
+  }
+  for (component in c("R2", "RMSE", "sig2", "marg_lik")) {
+    results[[component]] = TRUE
+  }
+
+
+  results
+}
+
+beastbit2raster = function (b, component = "trend", subcomponent = "ncp", inf_to_na=TRUE, template=NULL) {
+
+  if (isa_tiled_beast(b)) {
+    rasters = list()
+
+    for (idx in b$index$beast_id) {
+      rr = beastbit2raster(b$beasts[[idx]], component, subcomponent, inf_to_na, template)
+      rasters[[idx]] = rr
+    }
+    return(mosaic(sprc(rasters)))
+  }
+
   if (class(b) != "beast") {
     stop ("Need an Rbeast result")
   }
@@ -337,7 +474,7 @@ beastbit2raster = function (b, component = "trend", subcomponent = "ncp", templa
 
       #  These should be temporal data.
       if (subcomponent %in% temporal_subcomponents && nbands == length(b$time)) {
-        message (sprintf ("Temporal data for %s, %s", component, subcomponent))
+        #message (sprintf ("Temporal data for %s, %s", component, subcomponent))
         t = b$time_as_date  #  use pre-calculated if exists
         if (is.null(t)) {
           t = lubridate::date_decimal (b$time)
@@ -382,27 +519,66 @@ beastbit2raster = function (b, component = "trend", subcomponent = "ncp", templa
     names(r) = component
   }
 
+  if (inf_to_na && max(minmax(r)) == Inf) {
+    r[r == Inf] = NA
+  }
+
   r
 }
 
+#  pretty basic check until we develop a tiled beast class
+isa_tiled_beast = function(b) {
+  if (is.atomic(b) || (is.null(b$index) && is.null(b$beasts))) {
+    return (FALSE)
+  }
+  return (all(sapply (b$beasts, FUN=function(x){is.null(x) || class(x)=='beast'})))
+}
+
+
 export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
-  list = rasterise_beast(b)
+
+  name_list = get_beast_component_list(b)
   message ("Exporting now")
-  for (name in names(list)) {
-    pfx = file.path (dir, paste0(prefix, name))
-    outfile = paste0 (pfx, ".tif")
-    message (outfile)
-    r = list[[name]]
-    r[r == Inf] = NA
-    writeRaster(list[[name]], outfile, overwrite=overwrite)
-    #  also dump netCDF for temporal data
-    if (!anyNA(terra::time(r))) {
-      outfile = paste0 (pfx, ".nc")
+
+  outputs = character()
+
+  for (component_name in names(name_list)) {
+    subcomponent = name_list[[component_name]]
+    if (is.list(subcomponent)) {
+      for (subcomponent_name in names(subcomponent)) {
+        name = sprintf ("%s_%s", component_name, subcomponent_name)
+        pfx = file.path (dir, paste0(prefix, name))
+        outfile = paste0 (pfx, ".tif")
+        message (outfile)
+
+        r = beastbit2raster(b, component_name, subcomponent_name)
+
+        writeRaster(r, outfile, overwrite=overwrite)
+        outputs = c(outputs, outfile)
+
+        #  also dump netCDF for temporal data
+        if (!anyNA(terra::time(r))) {
+          outfile = paste0 (pfx, ".nc")
+          message (outfile)
+          writeCDF(r, outfile, overwrite=overwrite)
+          outputs = c(outputs, outfile)
+        }
+      }
+    }
+    else {
+      name = sprintf ("%s", component_name)
+      pfx = file.path (dir, paste0(prefix, name))
+      outfile = paste0 (pfx, ".tif")
       message (outfile)
-      writeCDF(list[[name]], outfile, overwrite=overwrite)
+
+      r = beastbit2raster(b, component_name)
+
+      writeRaster(r, outfile, overwrite=overwrite)
+      outputs = c(outputs, outfile)
     }
   }
-  invisible(list)
+
+  invisible(outputs)
 }
 
 
