@@ -86,6 +86,7 @@ tiled_beast_modis = function (raster, tile_size=64, start_time = NULL, ...) {
   v = as.polygons(rr)
   v = terra::intersect(v, ext(raster))
   v$beast_id = 1:nrow(v)
+  v = st_as_sf(v)  #  make it an sf obect
 
   rm (rr)
   gc()
