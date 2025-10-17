@@ -66,7 +66,7 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
   return (o)
 }
 
-tiled_beast_modis = function (raster, tile_size=64, start_time = NULL, ...) {
+tiled_beast_modis = function (raster, tile_size=64, printParameter=TRUE, start_time = NULL, ...) {
   res = res(raster)[1:2] * tile_size
   ext = ext(raster)
   nrows = ceiling((ext[2] - ext[1]) / res[2])
@@ -99,7 +99,8 @@ tiled_beast_modis = function (raster, tile_size=64, start_time = NULL, ...) {
     if (is.na(i)) {break}  #  for debug
     message (sprintf("tile %s of %s", i, ntiles))
     r = crop(raster, v[i,], ext=TRUE)
-    b[[i]] = beast_modis(r, start_time=start_time, ...)
+    b[[i]] = beast_modis(r, start_time=start_time, printParameter=printParameter, ...)
+    printParameter = FALSE  #  only need this for the first one
   }
 
   #  maybe convert v to an sf object?
@@ -108,7 +109,7 @@ tiled_beast_modis = function (raster, tile_size=64, start_time = NULL, ...) {
   return (bm)
 }
 
-beast_modis = function (raster, start_time = NULL, ...) {
+beast_modis = function (raster, printParameter=TRUE, start_time = NULL, ...) {
 
   if (dim(raster)[3] < 20) {
     stop ("Fewer than 20 time steps in data set")
@@ -145,7 +146,8 @@ beast_modis = function (raster, start_time = NULL, ...) {
   #  minimal for now
   extra = list (
     numThreadsPerCPU = 3,
-    numParThreads    = 30
+    numParThreads    = 30,
+    printParameter=printParameter
   )
 
   #browser()
