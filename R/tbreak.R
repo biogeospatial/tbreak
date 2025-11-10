@@ -26,7 +26,7 @@ get_date_vec_from_raster_names = function (raster) {
 calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_time=NULL, ...) {
   coord = parse_coord_string(coord)
 
-  dates = get_date_vec_from_raster_names(raster)
+  # dates = get_date_vec_from_raster_names(raster)
 
   cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
   if (is.na(cell_num)) {
@@ -35,19 +35,7 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
   Y = unlist(raster[cell_num])
   Y[Y < -0.25] = NA
 
-  metadata = list(
-    time             = dates,
-    isRegularOrdered = FALSE,    # IRREGULAR input
-    #whichDimIsTime   = 3,        # 437 is the ts length, so set it to '3' here.
-    # time$datestr     = datestr,  # date info is contained in the file names
-    # time$strfmt      = 'LT05_018032_20080311.yyyy-mm-dd',
-    deltaTime        = 16/365,     # MODIS data are 16 days
-    #deltaTime        = 1/12,
-    #    period = 32/365
-    period = 1
-    #period           = 16/365
-    #startTime        = ifelse (is.null(start_time, time(tmp_ras)[1], as.Date(start_time)))
-  )
+  metadata = get_default_beast_metadata(raster, ...)
 
   #  minimal for now
   extra = list (
@@ -91,6 +79,8 @@ tiled_beast_modis = function (raster, tile_size=64, printParameter=TRUE, start_t
   rm (rr)
   gc()
 
+  dates = get_date_vec_from_raster_names(raster, ...)
+
   b = list()
   subset = 1:nrow(v)
   ntiles = nrow(v)
@@ -99,12 +89,12 @@ tiled_beast_modis = function (raster, tile_size=64, printParameter=TRUE, start_t
     if (is.na(i)) {break}  #  for debug
     message (sprintf("tile %s of %s", i, ntiles))
     r = crop(raster, v[i,], ext=TRUE)
-    b[[i]] = beast_modis(r, start_time=start_time, printParameter=printParameter, ...)
+    b[[i]] = beast_modis(r, dates=dates, start_time=start_time, printParameter=printParameter, ...)
     printParameter = FALSE  #  only need this for the first one
   }
 
   #  maybe convert v to an sf object?
-  bm = list (index = v, beasts = b)
+  bm = list (index = v, beasts = b, time = dates)
 
   invisible (bm)
 }
@@ -121,27 +111,13 @@ beast_modis = function (raster, printParameter=TRUE, start_time = NULL, ...) {
   tmp_ras = toMemory(tmp_ras)   # To use beast, make sure all the data is read into memory
   dims    = dim(tmp_ras)
 
-  dates = get_date_vec_from_raster_names(raster)
-
   # Y = values(tmp_ras)
   #dim(Y)   = dims[c(2,1,3)]    # Assign column-major dim expected by Rbeast
   #  avoid the need to transpose
   Y = as.matrix(tmp_ras, wide=TRUE)
   dim(Y)   = dims[c(1,2,3)]  #  could just use dims directly...
 
-  metadata = list(
-    time             = dates,
-    isRegularOrdered = FALSE,    # IRREGULAR input
-    whichDimIsTime   = 3,        # 437 is the ts length, so set it to '3' here.
-    # time$datestr     = datestr,  # date info is contained in the file names
-    # time$strfmt      = 'LT05_018032_20080311.yyyy-mm-dd',
-    deltaTime        = 16/365,     # MODIS data are 16 days
-    #deltaTime        = 1/12,
-    #    period = 32/365
-    period = 1
-    #period           = 16/365
-    #startTime        = ifelse (is.null(start_time, time(tmp_ras)[1], as.Date(start_time)))
-  )
+  metadata = get_default_beast_metadata(raster, ...)
 
   #  minimal for now
   extra = list (
@@ -163,6 +139,26 @@ beast_modis = function (raster, printParameter=TRUE, start_time = NULL, ...) {
 
   gc()
   invisible (o)
+}
+
+get_default_beast_metadata = function (raster, dates=NULL, ...) {
+  if (is.null(dates)) {
+    dates = get_date_vec_from_raster_names(raster, ...)
+  }
+  metadata = list(
+    time             = dates,
+    isRegularOrdered = FALSE,    # IRREGULAR input
+    whichDimIsTime   = 3,        # 437 is the ts length, so set it to '3' here.
+    # time$datestr     = datestr,  # date info is contained in the file names
+    # time$strfmt      = 'LT05_018032_20080311.yyyy-mm-dd',
+    deltaTime        = 16/365,     # MODIS data are 16 days
+    #deltaTime        = 1/12,
+    #    period = 32/365
+    period = 1
+    #period           = 16/365
+    #startTime        = ifelse (is.null(start_time, time(tmp_ras)[1], as.Date(start_time)))
+  )
+  return (metadata)
 }
 
 parse_coord_string = function (coord) {
