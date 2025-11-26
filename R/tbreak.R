@@ -39,6 +39,7 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
 
   #  minimal for now
   extra = list (
+    computeTrendSlope = TRUE
     # numThreadsPerCPU = 3,
     # numParThreads    = 30
   )
@@ -54,7 +55,7 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
   return (o)
 }
 
-tiled_beast_modis = function (raster, tile_size=64, printParameter=TRUE, start_time = NULL, ...) {
+tiled_beast_modis = function (raster, tile_size=64, printParameter=TRUE, printProgress=TRUE, start_time = NULL, ...) {
   res = res(raster)[1:2] * tile_size
   ext = ext(raster)
   nrows = ceiling((ext[2] - ext[1]) / res[2])
@@ -74,7 +75,7 @@ tiled_beast_modis = function (raster, tile_size=64, printParameter=TRUE, start_t
   v = as.polygons(rr)
   v = terra::intersect(v, ext(raster))
   v$beast_id = 1:nrow(v)
-  v = st_as_sf(v)  #  make it an sf object
+  v = sf::st_as_sf(v)  #  make it an sf object
 
   rm (rr)
   gc()
@@ -87,19 +88,23 @@ tiled_beast_modis = function (raster, tile_size=64, printParameter=TRUE, start_t
   #subset = 1:3  #  for debug
   for (i in v$beast_id[subset]) {
     if (is.na(i)) {break}  #  for debug
-    message (sprintf("tile %s of %s", i, ntiles))
+    message (sprintf("beast tile %s of %s", i, ntiles))
     r = crop(raster, v[i,], ext=TRUE)
-    b[[i]] = beast_modis(r, dates=dates, start_time=start_time, printParameter=printParameter, ...)
+    b[[i]] = beast_modis(
+      r, dates=dates, start_time=start_time,
+      printParameter = printParameter,
+      printProgress  = printProgress,
+      ...
+    )
     printParameter = FALSE  #  only need this for the first one
   }
 
-  #  maybe convert v to an sf object?
   bm = list (index = v, beasts = b, time = dates)
 
   invisible (bm)
 }
 
-beast_modis = function (raster, printParameter=TRUE, start_time = NULL, ...) {
+beast_modis = function (raster, printParameter=TRUE, printProgress=TRUE, start_time = NULL, ...) {
 
   if (dim(raster)[3] < 20) {
     stop ("Fewer than 20 time steps in data set")
@@ -121,9 +126,11 @@ beast_modis = function (raster, printParameter=TRUE, start_time = NULL, ...) {
 
   #  minimal for now
   extra = list (
+    computeTrendSlope = TRUE,
     #numThreadsPerCPU = 3,
-    #numParThreads    = 30,
-    printParameter=printParameter
+    numParThreads    = 32,
+    printParameter = printParameter,
+    printProgress  = printProgress
   )
 
   #browser()
@@ -517,8 +524,13 @@ beastbit2raster = function (b, component = "trend", subcomponent = "ncp", inf_to
     names(r) = component
   }
 
-  if (inf_to_na && max(minmax(r)) == Inf) {
-    r[r == Inf] = NA
+  #  convoluted but needed as m can be NA at times
+  if (inf_to_na) {
+    m = max(minmax(r))
+    #message (m)
+    if (!is.null(m) && !is.na(m) && m == Inf) {
+      r[r == Inf] = NA
+    }
   }
 
   r
@@ -694,7 +706,7 @@ point_to_cell_polygon = function (coord, raster) {
   y1 = floor ((coord[2] - e$ymin) / c[2]) * c[2] + e$ymin
   y2 = y1 + c[2]
 
-  pol = st_polygon(
+  pol = sf::st_polygon(
     list(
       cbind(
         c(x1,x1,x2,x2,x1),
@@ -702,11 +714,11 @@ point_to_cell_polygon = function (coord, raster) {
       )
     )
   )
-  pol = st_sfc(pol, crs=modis_crs())
+  pol = sf::st_sfc(pol, crs=modis_crs())
   pol
 }
 
 modis_crs = function () {
   m = r"(PROJCS["modis_sinusoidal",GEOGCS["GCS_Unknown_datum_based_upon_the_custom_spheroid",DATUM["D_Not_specified_based_on_custom_spheroid",SPHEROID["Custom_spheroid",6371007.181,0.0]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Sinusoidal"],PARAMETER["False_Easting",0.0],PARAMETER["False_Northing",0.0],PARAMETER["Central_Meridian",0.0],UNIT["Meter",1.0]])"
-  st_crs(m)
+  sf::st_crs(m)
 }
