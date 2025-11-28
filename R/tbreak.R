@@ -36,10 +36,11 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
   Y[Y < -0.25] = NA
 
   metadata = get_default_beast_metadata(raster, ...)
+  metadata$whichDimIsTime = NULL
 
   #  minimal for now
   extra = list (
-    computeTrendSlope = TRUE
+    # computeTrendSlope = TRUE  #  not for single plots
     # numThreadsPerCPU = 3,
     # numParThreads    = 30
   )
@@ -624,6 +625,11 @@ plot_bfast_modis_coord = function (raster, coord, h=0.15, main=NULL) {
     return()
   }
 
+  #  proportional to time period
+  if (h > 1) {
+    h = h / as.numeric (dates[length(dates)] - dates[1])
+  }
+
   t2 = bfast::bfastts(u, dates, type = '16-day')
   tb = bfast::bfast(t2, h=h)
   plot(tb, main=main)
@@ -647,9 +653,24 @@ assign_time_to_raster = function (raster, format= "%Y-%m-%d") {
   return(raster)
 }
 
+get_cellnum_modis_coord = function (raster, coord) {
+  coord = parse_coord_string(coord)
+
+  cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
+  if (is.na(cell_num)) {
+    stop ("Coord does not intersect the raster")
+  }
+  cell_num
+}
+
+get_ts_modis_coord = function (raster, coord) {
+  cell_num = get_cellnum_modis_coord (raster, coord)
+  #message (cell_num)
+  unlist(raster[cell_num])
+}
 
 plot_ts_modis_coord = function (raster, coord, main=NULL) {
-    coord = parse_coord_string(coord)
+    # coord = parse_coord_string(coord)
 
     #  generate time axis if needed
     #  assumes form 2024-01-24 somewhere in band name
@@ -667,12 +688,13 @@ plot_ts_modis_coord = function (raster, coord, main=NULL) {
       dates = strptime(strftime(dates, format="%Y%m%d"), "%Y%m%d")
     }
 
-    cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
-    if (is.na(cell_num)) {
-      stop ("Coord does not intersect the raster")
-    }
+    # cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
+    # if (is.na(cell_num)) {
+    #   stop ("Coord does not intersect the raster")
+    # }
+    cell_num = get_cellnum_modis_coord (raster, coord)
     u = unlist(raster[cell_num])
-    u[u < -0.25] = NA  #  -0.3 is nodata
+    #u[u < -0.25] = NA  #  -0.3 is nodata, but not always
 
     if (all(is.na(u))) {
       message ("NA values only, skipping plot")
