@@ -21,8 +21,9 @@ run_and_save_by_tiles = function (raster, output_dir, output_prefix = "", overwr
     pfx = sprintf("%stile%s_", output_prefix, i)
     rds_file = file.path(output_dir, paste0(pfx, ".rds"))
 
-    chk = file.path(output_dir, paste0(pfx, "R2.tif"))
-    #message (chk)
+    #  trend_ncp is first one written
+    chk = file.path(output_dir, paste0(pfx, "trend_ncp.tif"))
+    message (chk)
     if (file.exists(chk)) {
       next
     }
