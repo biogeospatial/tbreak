@@ -70,9 +70,13 @@ t1 = time(raster)[1]
 
 plot (raster[[1]], main = as.character(t1))
 
-#  initialise for later
-coord_string = ""
-bfast_h = 1/7
+#  initialise if needed
+if (!exists("coord_string")) {
+  coord_string = ""
+}
+if (!exists("bfast_h")) {
+  bfast_h = 1/7
+}
 
 ```
 
@@ -115,6 +119,9 @@ if (length (resp)) {
 Generate a bfast output for the same coord, or a different one if
 preferred.
 
+The "h" parameter is the segment size as a fraction of the time series.
+Whole numbers are treated as days and converted to fractions internally.
+
 ```{r}
 
 response = svDialogs::dlg_input(
@@ -127,11 +134,11 @@ if (length (resp)) {
   coord_string = resp
 
   response = svDialogs::dlg_input(
-    message = "BFAST h parameter (default is 1/7)", 
+    message = "BFAST h parameter (default is 1/7, whole numbers are treated as days)", 
     default = bfast_h
   )
   resp = response$res
-  message (resp)
+  
   if (length(resp) > 0) {
     #  if we are a fraction of whole numbers
     if (all(grepl(pattern = r"(^\s*\d+/\d+\s*$)", x = resp))) {
@@ -139,7 +146,7 @@ if (length (resp)) {
     } else {
       bfast_h = as.numeric(resp)
     }
-    message (bfast_h)
+    
     t = time(raster)
     if (bfast_h < 1) {
       message (
@@ -150,7 +157,11 @@ if (length (resp)) {
         )
       )
     }
+  } else {
+    h = 1/7
   }
+  
+  message (bfast_h)
 
   bfast_res = tbreak:::plot_bfast_modis_coord (raster, coord = coord_string, h=bfast_h)
 }
