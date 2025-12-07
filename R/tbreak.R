@@ -33,7 +33,7 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
     stop ("Coord does not intersect the raster")
   }
   Y = unlist(raster[cell_num])
-  Y[Y < -0.25] = NA
+  #Y[Y < -0.25] = NA
 
   metadata = get_default_beast_metadata(raster, ...)
   metadata$whichDimIsTime = NULL
@@ -45,7 +45,21 @@ calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_ti
     # numParThreads    = 30
   )
 
-  o = Rbeast::beast123 (Y, metadata = metadata, extra = extra, ...)
+  mcmc = list()
+  #mcmc = list (
+  #  burnin = 500,
+  #  samples = 100000
+  #  #thinningFactor = 10
+  #)
+
+  prior = list (
+  #   seasonMaxKnotNum  = 10,
+  #   trendMaxKnotNum   = 10
+  #   trendMinSepDist   = 2 * ceiling(365 / 16),
+  #   tseg.min = 2 * ceiling(365/16)
+  )
+
+  o = Rbeast::beast123 (Y, metadata = metadata, extra = extra, mcmc = mcmc, prior=prior, ...)
 
   if (!is.na(o$R2)) {
     plot(o, main = main)
@@ -81,7 +95,7 @@ tiled_beast_modis = function (raster, tile_size=64, printParameter=TRUE, printPr
   rm (rr)
   gc()
 
-  dates = get_date_vec_from_raster_names(raster, ...)
+  dates = get_date_vec_from_raster_names(raster)
 
   b = list()
   subset = 1:nrow(v)
@@ -151,7 +165,7 @@ beast_modis = function (raster, printParameter=TRUE, printProgress=TRUE, start_t
 
 get_default_beast_metadata = function (raster, dates=NULL, ...) {
   if (is.null(dates)) {
-    dates = get_date_vec_from_raster_names(raster, ...)
+    dates = get_date_vec_from_raster_names(raster)
   }
   metadata = list(
     time             = dates,
@@ -618,7 +632,7 @@ plot_bfast_modis_coord = function (raster, coord, h=0.15, main=NULL) {
     stop ("Coord does not intersect the raster")
   }
   u = unlist(raster[cell_num])
-  u[u < -0.25] = NA
+  #u[u < -0.25] = NA
 
   if (sum(is.na(u)) > (length(u) / 10)) {
     message ("More than 10% of records are NA, skipping bfast generation")
