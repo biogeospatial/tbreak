@@ -12,7 +12,7 @@ Load needed libraries. Install if necessary.
 
 #  convoluted leftovers from initial version
 #  should just load tbreak directly
-pack_list = c("tbreak")
+pack_list = c("tbreak", "sf")
 install_list = pack_list[!(pack_list %in% installed.packages()[,"Package"])]
 if(length(install_list)) {
   library ("remotes")
@@ -53,8 +53,12 @@ raster = rast(fname)
 if (any(is.na(terra::time(raster)))) {
   raster = tbreak:::assign_time_to_raster(raster)
 }
-if (any(minmax(raster)[1,] < -0.25)) {
-  raster[raster < -0.25] = NA
+
+mm = minmax(raster)
+if (any(mm[2,] < 1) && any(mm[1,] > -1)) {
+  if (any(mm[1,] < -0.25)) {
+    raster[raster < -0.25] = NA
+  }
 }
 
 
@@ -66,28 +70,35 @@ t1 = time(raster)[1]
 
 plot (raster[[1]], main = as.character(t1))
 
-#  initialise for later
-coord_string = ""
+#  initialise if needed
+if (!exists("coord_string")) {
+  coord_string = ""
+}
+if (!exists("bfast_h")) {
+  bfast_h = 1/7
+}
 
 ```
-Generate a beast result for a single cell and plot it.  
 
-This is useful when the raster is too large to run the beast analysis on. 
+Generate a beast result for a single cell and plot it.
 
-Rerun this and the next few steps with different coords to explore your data.
+This is useful when the raster is too large to run the beast analysis
+on.
+
+Rerun this and the next few steps with different coords to explore your
+data.
 
 The coordinates to enter are obtained by right clicking on the map in
 ArcGIS and choosing "Copy Coordinates".
 
 In ArcGIS:
 
-Make sure the map's display units uses either the MODIS Sinusoidal coordinate 
-system or WGS 1984. These can be checked and set under the map's properties 
-(right click on the map name in the table of contents). 
+Make sure the map's display units uses either the MODIS Sinusoidal
+coordinate system or WGS 1984. These can be checked and set under the
+map's properties (right click on the map name in the table of contents).
 
 The display units can also be changed by clicking the drop down to the
 right of the coordinate at the bottom of the map pane.
-
 
 ```{r}
 
@@ -105,8 +116,11 @@ if (length (resp)) {
 
 ```
 
+Generate a bfast output for the same coord, or a different one if
+preferred.
 
-Generate a bfast output for the same coord, or a different one if preferred.
+The "h" parameter is the segment size as a fraction of the time series.
+Whole numbers are treated as days and converted to fractions internally.
 
 ```{r}
 
@@ -118,16 +132,48 @@ response = svDialogs::dlg_input(
 resp = response$res
 if (length (resp)) {
   coord_string = resp
-  bfast_res = tbreak:::plot_bfast_modis_coord (raster, coord = coord_string, h=1/7)
+
+  response = svDialogs::dlg_input(
+    message = "BFAST h parameter (default is 1/7, whole numbers are treated as days)", 
+    default = bfast_h
+  )
+  resp = response$res
+  
+  if (length(resp) > 0) {
+    #  if we are a fraction of whole numbers
+    if (all(grepl(pattern = r"(^\s*\d+/\d+\s*$)", x = resp))) {
+      bfast_h = eval (parse (text = resp))
+    } else {
+      bfast_h = as.numeric(resp)
+    }
+    
+    t = time(raster)
+    if (bfast_h < 1) {
+      message (
+        sprintf(
+          "H parameter of %s corresponds to %s days",
+          bfast_h, 
+          floor((t[length(t)] - t[1]) * bfast_h)
+        )
+      )
+    }
+  } else {
+    h = 1/7
+  }
+  
+  message (bfast_h)
+
+  bfast_res = tbreak:::plot_bfast_modis_coord (raster, coord = coord_string, h=bfast_h)
 }
 
 
 ```
-Generate a plain time series plot for the same coord, or a different 
-one if preferred.
 
-This is mostly useful for diagnostic checks as the bfast plot 
-includes the time series as the top plot.  
+Generate a plain time series plot for the same coord, or a different one
+if preferred.
+
+This is mostly useful for diagnostic checks as the bfast plot includes
+the time series as the top plot.
 
 ```{r}
 
@@ -144,7 +190,6 @@ if (length (resp)) {
 
 
 ```
-
 
 Now run beast on the loaded raster. This might take a while.
 
@@ -179,13 +224,10 @@ plot (ncpt_raster, main = "Number of trend change points")
 
 ```
 
-
-Plot the result for one cell from a "beasted" raster.  
+Plot the result for one cell from a "beasted" raster.
 
 This is probably redundant since you can generate the plot from the
 raster directly but does avoid some recalculation.
-
-
 
 ```{r}
 
@@ -219,4 +261,3 @@ b_rasters = export_beast_rasters(beast_result, output_dir, output_prefix, overwr
 
 
 ```
-
