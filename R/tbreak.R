@@ -212,11 +212,6 @@ parse_coord_string = function (coord) {
 
     if (poss_plain_dd) {
       xy = stri_split_regex(coord, ",\\s+")[[1]][2:1]
-    } else {
-      x_hemi = toupper (stri_extract(xy[1], regex = "[NESWnesw]"))
-      if (x_hemi %in% c("N", "S")) {
-        xy = rev (xy)
-      }
     }
     x = parse_lon(xy[1])
     y = parse_lat(xy[2])
