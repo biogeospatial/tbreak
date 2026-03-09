@@ -188,8 +188,21 @@ parse_coord_string = function (coord) {
 
   in_metres = stri_sub(coord, -1) == "m"
 
-  xy = stri_split_regex(coord, "\\s")[[1]][1:2]
-  xy = stri_replace_all_fixed (xy, replacement="", pattern=",")
+  xy = numeric()
+  #  if it has whitespace then it is probably from ArcGIS, Google or similar
+  #  otherwise it is QGIS
+  if (stri_count_regex(coord, "\\s")) {
+    xy = stri_split_regex(coord, "\\s")[[1]][1:2]
+    xy = stri_replace_all_fixed (xy, replacement="", pattern=",")
+  } else {
+    xy = stri_split_fixed(coord, ",")[[1]][1:2]
+    x = as.numeric (xy[1])
+    if (x > 360 || x < -180) {
+      in_metres = TRUE
+    } else {
+      xy[1:2] = xy[2:1]  #  lat/long to x/y
+    }
+  }
 
   if (!in_metres) {
     library("parzer")
@@ -199,16 +212,11 @@ parse_coord_string = function (coord) {
 
     if (poss_plain_dd) {
       xy = stri_split_regex(coord, ",\\s+")[[1]][2:1]
-    } else {
-      x_hemi = toupper (stri_extract(xy[1], regex = "[NESWnesw]"))
-      if (x_hemi %in% c("N", "S")) {
-        xy = rev (xy)
-      }
     }
     x = parse_lon(xy[1])
     y = parse_lat(xy[2])
     point = st_sfc(st_point(c(x,y)), crs = 4326)
-    point2 = st_transform (point, modis_crs())
+    point2 = st_transform (point, tbreak:::modis_crs())
     p = st_coordinates(point2)
     return (c(p[1], p[2]))
   }

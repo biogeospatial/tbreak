@@ -47,6 +47,8 @@ things will happen.
 
 fname = file.choose()
 
+output_dir = dirname(fname)
+
 raster = rast(fname)
 
 #  some don't have it 
@@ -197,6 +199,11 @@ Plotted result is the number of trend change points across the raster.
 
 ```{r}
 
+out_dir = svDialogs::dlgDir(title = "Output directory", default = getwd())$res
+if (length (out_dir) > 0) {
+  setwd(out_dir)
+}
+
 #  Try to gracefully handle errors without overwriting a
 #  pre-existing beast_raster object if we fail.
 #  That said, stopping the session kills it all anyway.
@@ -211,13 +218,13 @@ beast_result_tmp = tryCatch(
 beast_result = beast_result_tmp
 rm (beast_result_tmp)
 
-r2_raster = beastbit2raster(beast_result, "R2")
+r2_raster = tbreak:::beastbit2raster(beast_result, "R2")
 plot (r2_raster, main = "R^2")
 
-ncps_raster = beastbit2raster(beast_result, "season", "ncp")
+ncps_raster = tbreak:::beastbit2raster(beast_result, "season", "ncp")
 plot (ncps_raster, main = "Number of season change points")
 
-ncpt_raster = beastbit2raster(beast_result, "trend", "ncp")
+ncpt_raster = tbreak:::beastbit2raster(beast_result, "trend", "ncp")
 plot (ncpt_raster, main = "Number of trend change points")
 
 
@@ -250,7 +257,11 @@ Now export the beast results to a set of rasters.
 
 ```{r}
 
-output_dir = svDialogs::dlgDir()$res
+out_dir = svDialogs::dlgDir(title = "Output directory", default = getwd())$res
+if (length (out_dir) > 0) {
+  setwd(out_dir)
+}
+
 
 output_prefix = svDialogs::dlg_input(message = "Filename prefix", default="")$res
 
