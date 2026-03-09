@@ -211,13 +211,13 @@ beast_result_tmp = tryCatch(
 beast_result = beast_result_tmp
 rm (beast_result_tmp)
 
-r2_raster = beastbit2raster(beast_result, "R2")
+r2_raster = tbreak:::beastbit2raster(beast_result, "R2")
 plot (r2_raster, main = "R^2")
 
-ncps_raster = beastbit2raster(beast_result, "season", "ncp")
+ncps_raster = tbreak:::beastbit2raster(beast_result, "season", "ncp")
 plot (ncps_raster, main = "Number of season change points")
 
-ncpt_raster = beastbit2raster(beast_result, "trend", "ncp")
+ncpt_raster = tbreak:::beastbit2raster(beast_result, "trend", "ncp")
 plot (ncpt_raster, main = "Number of trend change points")
 
 
