@@ -47,6 +47,8 @@ things will happen.
 
 fname = file.choose()
 
+output_dir = dirname(fname)
+
 raster = rast(fname)
 
 #  some don't have it 
@@ -197,6 +199,11 @@ Plotted result is the number of trend change points across the raster.
 
 ```{r}
 
+out_dir = svDialogs::dlgDir(title = "Output directory", default = getwd())$res
+if (length (out_dir) > 0) {
+  setwd(out_dir)
+}
+
 #  Try to gracefully handle errors without overwriting a
 #  pre-existing beast_raster object if we fail.
 #  That said, stopping the session kills it all anyway.
@@ -250,7 +257,11 @@ Now export the beast results to a set of rasters.
 
 ```{r}
 
-output_dir = svDialogs::dlgDir()$res
+out_dir = svDialogs::dlgDir(title = "Output directory", default = getwd())$res
+if (length (out_dir) > 0) {
+  setwd(out_dir)
+}
+
 
 output_prefix = svDialogs::dlg_input(message = "Filename prefix", default="")$res
 
