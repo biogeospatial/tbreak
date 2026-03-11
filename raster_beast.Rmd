@@ -199,7 +199,7 @@ if (length (resp)) {
 
 ```
 
-Export a polygon in KML format for the selected pixel.  This can be loaded into a GIS or Google Earth.
+Export a polygon in KML format for the pixel corresponding with the specified coordinate.  This can then be loaded into a GIS or Google Earth.
 
 ```{r}
 
@@ -223,6 +223,7 @@ if (length (out_dir) > 0) {
     coord_string = response$res
     if (length(coord_string)) {
       poly = tbreak:::point_to_cell_polygon(coord_string, raster)
+      kml_filename = stri_replace_last(kml_filename, '', regex='\\.kml')
       write_sf(
         poly, 
         file.path(out_dir, sprintf ("%s.kml", kml_filename)),
@@ -233,7 +234,6 @@ if (length (out_dir) > 0) {
 }
 
 ```
-
 
 Now run beast on the loaded raster. This might take a while.
 
