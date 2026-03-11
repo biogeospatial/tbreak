@@ -17,7 +17,7 @@ Install if necessary.
 pack_list = c("tbreak", "sf")
 installed = installed.packages()
 install_list = pack_list[!(pack_list %in% installed[,"Package"])]
-if(length(install_list)) {
+if(length(install_list) || installed[,"Version"][["tbreak"]] < "0.0.3.9000") {
   if (!("remotes" %in% installed[,"Package"])) {
     install.packages("remotes")
   }
