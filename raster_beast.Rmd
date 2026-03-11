@@ -6,7 +6,9 @@ editor_options:
     wrap: 72
 ---
 
-Load needed libraries. Install if necessary.
+# Load needed libraries. 
+
+Install if necessary.
 
 ```{r}
 
@@ -35,6 +37,8 @@ for (p in pack_list) {
 
 
 ```
+
+#  Load the raster 
 
 Now load the file we want and display some of its properties, and the
 first band.
@@ -88,6 +92,8 @@ if (!exists("output_dir")) {
 
 ```
 
+#  Single cell BEAST result and plot
+
 Generate a beast result for a single cell and plot it.
 
 This is useful when the raster is too large to run the beast analysis
@@ -123,6 +129,9 @@ if (length (resp)) {
 
 
 ```
+
+
+#  Single cell BFAST result and plot
 
 Generate a bfast output for the same coord, or a different one if
 preferred.
@@ -177,6 +186,8 @@ if (length (resp)) {
 
 ```
 
+#  Single cell plain time series plot
+
 Generate a plain time series plot for the same coord, or a different one
 if preferred.
 
@@ -198,6 +209,8 @@ if (length (resp)) {
 
 
 ```
+
+# Create a KML polygon file of the cell associated with the coordinate
 
 Export a polygon in KML format for the pixel corresponding with the specified coordinate.  This can then be loaded into a GIS or Google Earth.
 
@@ -234,6 +247,8 @@ if (length (out_dir) > 0) {
 }
 
 ```
+
+#  Run BEAST on the whole raster 
 
 Now run beast on the loaded raster. This might take a while.
 
@@ -273,10 +288,11 @@ if (length (out_dir) > 0) {
 
 ```
 
+# Plot the BEAST result for one raster cell
+
 Plot the result for one cell from a "beasted" raster.
 
-This is probably redundant since you can generate the plot from the
-raster directly but does avoid some recalculation.
+This is most useful for when you want the exact same result that was generated in the preceding beast raster run.  Otherwise the single cell results are not entirely consistent.
 
 ```{r}
 
@@ -295,7 +311,14 @@ if (length (resp)) {
 
 ```
 
+#  Export the BEAST raster results
+
 Now export the beast results to a set of rasters.
+
+This generates many, many files.  You do not need all of them but see the help for the naming scheme.  
+
+Look for the Value list under [the help system](https://cran.r-project.org/web/packages/Rbeast/refman/Rbeast.html#beast123).  Search for text "The output is a list object of class "beast" containing the following fields".
+
 
 ```{r}
 
