@@ -15,8 +15,12 @@ Install if necessary.
 #  convoluted leftovers from initial version
 #  should just load tbreak directly
 pack_list = c("tbreak", "sf")
-install_list = pack_list[!(pack_list %in% installed.packages()[,"Package"])]
+installed = installed.packages()
+install_list = pack_list[!(pack_list %in% installed[,"Package"])]
 if(length(install_list)) {
+  if (!("remotes" %in% installed[,"Package"])) {
+    install.packages("remotes")
+  }
   library ("remotes")
   install_github("biogeospatial/tbreak")
 }
