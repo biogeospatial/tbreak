@@ -247,7 +247,7 @@ response = svDialogs::dlg_input(
 resp = response$res
 if (length (resp)) {
   coord_string = resp
-  plot_beast_modis_coord (beast_result, coord = coord_string)
+  tbreak:::plot_beast_modis_coord (beast_result, coord = coord_string)
 }
 
 
@@ -268,7 +268,7 @@ output_prefix = svDialogs::dlg_input(message = "Filename prefix", default="")$re
 save_flag      = svDialogs::dlg_list  (choices = c("No", "Yes"), title = "Overwrite existing files?")$res
 overwrite_flag = ifelse (length(save_flag) > 0 && save_flag == "Yes", TRUE, FALSE)
 
-b_rasters = export_beast_rasters(beast_result, output_dir, output_prefix, overwrite_flag)
+b_rasters = tbreak:::export_beast_rasters(beast_result, output_dir, output_prefix, overwrite_flag)
 
 
 ```
