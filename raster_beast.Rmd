@@ -79,6 +79,12 @@ if (!exists("coord_string")) {
 if (!exists("bfast_h")) {
   bfast_h = 1/7
 }
+if (!exists("kml_filename")) {
+  kml_filename = "one_pixel"
+}
+if (!exists("output_dir")) {
+  output_dir = getwd()
+}
 
 ```
 
@@ -193,41 +199,77 @@ if (length (resp)) {
 
 ```
 
+Export a polygon in KML format for the selected pixel.  This can be loaded into a GIS or Google Earth.
+
+```{r}
+
+out_dir = svDialogs::dlgDir(title = "Choose the output directory", default = output_dir)$res
+if (length (out_dir) > 0) {
+  setwd(out_dir)
+  output_dir = out_dir  #  save for re-use
+
+  response = svDialogs::dlg_input(
+    message = sprintf ("Enter a KML file name to save in %s", getwd()),
+    default = kml_filename
+  )
+  
+  resp = response$res
+  if (length (resp)) {
+    kml_filename = resp
+    response = svDialogs::dlg_input(
+      message = "Coordinate location",
+      default = coord_string
+    )
+    coord_string = response$res
+    if (length(coord_string)) {
+      poly = tbreak:::point_to_cell_polygon(coord_string, raster)
+      write_sf(
+        poly, 
+        file.path(out_dir, sprintf ("%s.kml", kml_filename)),
+        overwrite=TRUE
+      )
+    }
+  }
+}
+
+```
+
+
 Now run beast on the loaded raster. This might take a while.
 
 Plotted result is the number of trend change points across the raster.
 
 ```{r}
 
-out_dir = svDialogs::dlgDir(title = "Output directory", default = getwd())$res
+out_dir = svDialogs::dlgDir(title = "Choose the output directory", default = output_dir)$res
 if (length (out_dir) > 0) {
   setwd(out_dir)
+  output_dir = out_dir
+
+  #  Try to gracefully handle errors without overwriting a
+  #  pre-existing beast_raster object if we fail.
+  #  That said, stopping the session kills it all anyway.
+  beast_result_tmp = tryCatch(
+    {
+      tbreak:::tiled_beast_modis (raster)
+    }, error = function(e) {
+      stop (sprintf ("Unable to process data\n%s", e))
+    }
+  )
+  
+  beast_result = beast_result_tmp
+  rm (beast_result_tmp)
+  
+  r2_raster = tbreak:::beastbit2raster(beast_result, "R2")
+  plot (r2_raster, main = "R^2")
+  
+  ncps_raster = tbreak:::beastbit2raster(beast_result, "season", "ncp")
+  plot (ncps_raster, main = "Number of season change points")
+  
+  ncpt_raster = tbreak:::beastbit2raster(beast_result, "trend", "ncp")
+  plot (ncpt_raster, main = "Number of trend change points")
+
 }
-
-#  Try to gracefully handle errors without overwriting a
-#  pre-existing beast_raster object if we fail.
-#  That said, stopping the session kills it all anyway.
-beast_result_tmp = tryCatch(
-  {
-    tbreak:::tiled_beast_modis (raster)
-  }, error = function(e) {
-    stop (sprintf ("Unable to process data\n%s", e))
-  }
-)
-
-beast_result = beast_result_tmp
-rm (beast_result_tmp)
-
-r2_raster = tbreak:::beastbit2raster(beast_result, "R2")
-plot (r2_raster, main = "R^2")
-
-ncps_raster = tbreak:::beastbit2raster(beast_result, "season", "ncp")
-plot (ncps_raster, main = "Number of season change points")
-
-ncpt_raster = tbreak:::beastbit2raster(beast_result, "trend", "ncp")
-plot (ncpt_raster, main = "Number of trend change points")
-
-
 
 ```
 
@@ -257,18 +299,17 @@ Now export the beast results to a set of rasters.
 
 ```{r}
 
-out_dir = svDialogs::dlgDir(title = "Output directory", default = getwd())$res
+out_dir = svDialogs::dlgDir(title = "Choose the output directory", default = output_dir)$res
 if (length (out_dir) > 0) {
   setwd(out_dir)
+  output_dir = out_dir
+
+  output_prefix = svDialogs::dlg_input(message = "Filename prefix", default="")$res
+  
+  save_flag      = svDialogs::dlg_list  (choices = c("No", "Yes"), title = "Overwrite existing files?")$res
+  overwrite_flag = ifelse (length(save_flag) > 0 && save_flag == "Yes", TRUE, FALSE)
+  
+  b_rasters = tbreak:::export_beast_rasters(beast_result, output_dir, output_prefix, overwrite_flag)
 }
-
-
-output_prefix = svDialogs::dlg_input(message = "Filename prefix", default="")$res
-
-save_flag      = svDialogs::dlg_list  (choices = c("No", "Yes"), title = "Overwrite existing files?")$res
-overwrite_flag = ifelse (length(save_flag) > 0 && save_flag == "Yes", TRUE, FALSE)
-
-b_rasters = tbreak:::export_beast_rasters(beast_result, output_dir, output_prefix, overwrite_flag)
-
 
 ```
