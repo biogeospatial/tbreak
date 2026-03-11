@@ -6,7 +6,9 @@ editor_options:
     wrap: 72
 ---
 
-Load needed libraries. Install if necessary.
+# Load needed libraries. 
+
+Install if necessary.
 
 ```{r}
 
@@ -35,6 +37,8 @@ for (p in pack_list) {
 
 
 ```
+
+#  Load the raster 
 
 Now load the file we want and display some of its properties, and the
 first band.
@@ -79,8 +83,16 @@ if (!exists("coord_string")) {
 if (!exists("bfast_h")) {
   bfast_h = 1/7
 }
+if (!exists("kml_filename")) {
+  kml_filename = "one_pixel"
+}
+if (!exists("output_dir")) {
+  output_dir = getwd()
+}
 
 ```
+
+#  Single cell BEAST result and plot
 
 Generate a beast result for a single cell and plot it.
 
@@ -117,6 +129,9 @@ if (length (resp)) {
 
 
 ```
+
+
+#  Single cell BFAST result and plot
 
 Generate a bfast output for the same coord, or a different one if
 preferred.
@@ -171,6 +186,8 @@ if (length (resp)) {
 
 ```
 
+#  Single cell plain time series plot
+
 Generate a plain time series plot for the same coord, or a different one
 if preferred.
 
@@ -193,48 +210,89 @@ if (length (resp)) {
 
 ```
 
+# Create a KML polygon file of the cell associated with the coordinate
+
+Export a polygon in KML format for the pixel corresponding with the specified coordinate.  This can then be loaded into a GIS or Google Earth.
+
+```{r}
+
+out_dir = svDialogs::dlgDir(title = "Choose the output directory", default = output_dir)$res
+if (length (out_dir) > 0) {
+  setwd(out_dir)
+  output_dir = out_dir  #  save for re-use
+
+  response = svDialogs::dlg_input(
+    message = sprintf ("Enter a KML file name to save in %s", getwd()),
+    default = kml_filename
+  )
+  
+  resp = response$res
+  if (length (resp)) {
+    kml_filename = resp
+    response = svDialogs::dlg_input(
+      message = "Coordinate location",
+      default = coord_string
+    )
+    coord_string = response$res
+    if (length(coord_string)) {
+      poly = tbreak:::point_to_cell_polygon(coord_string, raster)
+      kml_filename = stri_replace_last(kml_filename, '', regex='\\.kml')
+      write_sf(
+        poly, 
+        file.path(out_dir, sprintf ("%s.kml", kml_filename)),
+        overwrite=TRUE
+      )
+    }
+  }
+}
+
+```
+
+#  Run BEAST on the whole raster 
+
 Now run beast on the loaded raster. This might take a while.
 
 Plotted result is the number of trend change points across the raster.
 
 ```{r}
 
-out_dir = svDialogs::dlgDir(title = "Output directory", default = getwd())$res
+out_dir = svDialogs::dlgDir(title = "Choose the output directory", default = output_dir)$res
 if (length (out_dir) > 0) {
   setwd(out_dir)
+  output_dir = out_dir
+
+  #  Try to gracefully handle errors without overwriting a
+  #  pre-existing beast_raster object if we fail.
+  #  That said, stopping the session kills it all anyway.
+  beast_result_tmp = tryCatch(
+    {
+      tbreak:::tiled_beast_modis (raster)
+    }, error = function(e) {
+      stop (sprintf ("Unable to process data\n%s", e))
+    }
+  )
+  
+  beast_result = beast_result_tmp
+  rm (beast_result_tmp)
+  
+  r2_raster = tbreak:::beastbit2raster(beast_result, "R2")
+  plot (r2_raster, main = "R^2")
+  
+  ncps_raster = tbreak:::beastbit2raster(beast_result, "season", "ncp")
+  plot (ncps_raster, main = "Number of season change points")
+  
+  ncpt_raster = tbreak:::beastbit2raster(beast_result, "trend", "ncp")
+  plot (ncpt_raster, main = "Number of trend change points")
+
 }
-
-#  Try to gracefully handle errors without overwriting a
-#  pre-existing beast_raster object if we fail.
-#  That said, stopping the session kills it all anyway.
-beast_result_tmp = tryCatch(
-  {
-    tbreak:::tiled_beast_modis (raster)
-  }, error = function(e) {
-    stop (sprintf ("Unable to process data\n%s", e))
-  }
-)
-
-beast_result = beast_result_tmp
-rm (beast_result_tmp)
-
-r2_raster = tbreak:::beastbit2raster(beast_result, "R2")
-plot (r2_raster, main = "R^2")
-
-ncps_raster = tbreak:::beastbit2raster(beast_result, "season", "ncp")
-plot (ncps_raster, main = "Number of season change points")
-
-ncpt_raster = tbreak:::beastbit2raster(beast_result, "trend", "ncp")
-plot (ncpt_raster, main = "Number of trend change points")
-
-
 
 ```
 
+# Plot the BEAST result for one raster cell
+
 Plot the result for one cell from a "beasted" raster.
 
-This is probably redundant since you can generate the plot from the
-raster directly but does avoid some recalculation.
+This is most useful for when you want the exact same result that was generated in the preceding beast raster run.  Otherwise the single cell results are not entirely consistent.
 
 ```{r}
 
@@ -253,22 +311,28 @@ if (length (resp)) {
 
 ```
 
+#  Export the BEAST raster results
+
 Now export the beast results to a set of rasters.
+
+This generates many, many files.  You do not need all of them but see the help for the naming scheme.  
+
+Look for the Value list under [the help system](https://cran.r-project.org/web/packages/Rbeast/refman/Rbeast.html#beast123).  Search for text "The output is a list object of class "beast" containing the following fields".
+
 
 ```{r}
 
-out_dir = svDialogs::dlgDir(title = "Output directory", default = getwd())$res
+out_dir = svDialogs::dlgDir(title = "Choose the output directory", default = output_dir)$res
 if (length (out_dir) > 0) {
   setwd(out_dir)
+  output_dir = out_dir
+
+  output_prefix = svDialogs::dlg_input(message = "Filename prefix", default="")$res
+  
+  save_flag      = svDialogs::dlg_list  (choices = c("No", "Yes"), title = "Overwrite existing files?")$res
+  overwrite_flag = ifelse (length(save_flag) > 0 && save_flag == "Yes", TRUE, FALSE)
+  
+  b_rasters = tbreak:::export_beast_rasters(beast_result, output_dir, output_prefix, overwrite_flag)
 }
-
-
-output_prefix = svDialogs::dlg_input(message = "Filename prefix", default="")$res
-
-save_flag      = svDialogs::dlg_list  (choices = c("No", "Yes"), title = "Overwrite existing files?")$res
-overwrite_flag = ifelse (length(save_flag) > 0 && save_flag == "Yes", TRUE, FALSE)
-
-b_rasters = tbreak:::export_beast_rasters(beast_result, output_dir, output_prefix, overwrite_flag)
-
 
 ```
