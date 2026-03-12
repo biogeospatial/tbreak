@@ -1,6 +1,6 @@
 Package: tbreak
 Title: Run beast and bfast change detection algorithms on raster data.
-Version: 0.0.2.9000
+Version: 0.0.3.9000
 Authors@R: 
     person("Shawn", "Laffan", , "shawnlaffan@gmail.com", role = c("aut", "cre"))
 Description: Wraps the RBeast and bfast code to work with raster data, including exports and per-cell plotting.
