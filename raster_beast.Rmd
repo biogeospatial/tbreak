@@ -93,6 +93,21 @@ if (!exists("kml_filename")) {
 if (!exists("output_dir")) {
   output_dir = getwd()
 }
+if(!exists ("plot_title")) {
+  plot_title = ""
+}
+
+get_plot_title = function (default) {
+  response = svDialogs::dlg_input(
+    message = "Enter a plot title", 
+    default = default
+  )
+  plot_title = response$res
+  if (length(plot_title) == 0) {
+    plot_title = NULL
+  }
+  plot_title
+}
 
 ```
 
@@ -128,7 +143,9 @@ response = svDialogs::dlg_input(
 resp = response$res
 if (length (resp)) {
   coord_string = resp
-  ts_res = tbreak:::calc_and_plot_beast_modis_coord (raster, coord = coord_string)
+  plot_title = get_plot_title(plot_title)
+  
+  ts_res = tbreak:::calc_and_plot_beast_modis_coord (raster, coord = coord_string, main = plot_title)
 }
 
 
@@ -182,9 +199,10 @@ if (length (resp)) {
     h = 1/7
   }
   
-  message (bfast_h)
+  #message (bfast_h)
+  plot_title = get_plot_title(plot_title)
 
-  bfast_res = tbreak:::plot_bfast_modis_coord (raster, coord = coord_string, h=bfast_h)
+  bfast_res = tbreak:::plot_bfast_modis_coord (raster, coord = coord_string, h=bfast_h, main = plot_title)
 }
 
 
@@ -208,7 +226,8 @@ response = svDialogs::dlg_input(
 resp = response$res
 if (length (resp)) {
   coord_string = resp
-  ts_res = tbreak:::plot_ts_modis_coord (raster, coord = coord_string)
+  plot_title = get_plot_title(plot_title)
+  ts_res = tbreak:::plot_ts_modis_coord (raster, coord = coord_string, main = plot_title)
 }
 
 
@@ -325,7 +344,8 @@ response = svDialogs::dlg_input(
 resp = response$res
 if (length (resp)) {
   coord_string = resp
-  tbreak:::plot_beast_modis_coord (beast_result, coord = coord_string)
+  plot_title = get_plot_title(plot_title)
+  tbreak:::plot_beast_modis_coord (beast_result, coord = coord_string, main = plot_title)
 }
 
 
