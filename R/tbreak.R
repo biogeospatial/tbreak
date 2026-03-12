@@ -189,11 +189,26 @@ parse_coord_string = function (coord) {
   in_metres = stri_sub(coord, -1) == "m"
 
   xy = numeric()
-  #  if it has whitespace then it is probably from ArcGIS, Google or similar
-  #  otherwise it is QGIS
-  if (stri_count_regex(coord, "\\s")) {
+  #  "-33, 150"                       is nearmap lat/lon
+  #  "-33,150"                        is QGIS lat/lon
+  #  "150.7572609°E 33.9385950°S "    is ArcGIS lat/lon
+  #  "13,907,112.15 -3,773,782.94 m " is ArcGIS projected
+  #  "13907112.15,-3773782.94"        is QGIS projected
+  #  '33°56'19.03"S 150°45'18.22"E'   is Google Earth lat/lon
+  if (stri_count_regex(coord, ",\\s")) {
+    xy = stri_split_regex(coord, ",\\s")[[1]][1:2]
+    x = as.numeric (xy[1])
+    if (x > 360 || x < -180) {
+      in_metres = TRUE
+    } else {
+      xy[1:2] = xy[2:1]  #  lat/long to x/y
+    }
+  } else if (stri_count_regex(coord, "\\s")) {
     xy = stri_split_regex(coord, "\\s")[[1]][1:2]
     xy = stri_replace_all_fixed (xy, replacement="", pattern=",")
+    if (stri_count_regex(xy[2], "[Ee]")) {
+      xy[1:2] = xy[2:1]  #  convert to lon/lat
+    }
   } else {
     xy = stri_split_fixed(coord, ",")[[1]][1:2]
     x = as.numeric (xy[1])
@@ -208,7 +223,7 @@ parse_coord_string = function (coord) {
     library("parzer")
     library("sf")
 
-    poss_plain_dd = stri_detect (coord, regex = r"(^-?\d+\.\d+,\s+-?\d+\.\d+$)")
+    poss_plain_dd = stri_detect (coord, regex = r"(^-?\d+\.\d+,\s*-?\d+\.\d+$)")
 
     if (poss_plain_dd) {
       xy = stri_split_regex(coord, ",\\s+")[[1]][2:1]
