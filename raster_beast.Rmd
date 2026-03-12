@@ -230,6 +230,12 @@ if (length (out_dir) > 0) {
     default = kml_filename
   )
   
+  col2hex = function(x, alpha = FALSE) {
+    args = as.data.frame(t(col2rgb(x, alpha = alpha)))
+    args = c(args, list(names = x, maxColorValue = 255))
+    do.call(rgb, args)
+  }
+  
   resp = response$res
   if (length (resp)) {
     kml_filename = resp
@@ -239,7 +245,17 @@ if (length (out_dir) > 0) {
     )
     coord_string = response$res
     if (length(coord_string)) {
+      #  a limited set of colours at the moment (657 is too many...)
+      col_choices = c("red", "orange", "yellow", "green", "blue", "violet", "white", "black")
+      colour = col_choices[1]
+      response = svDialogs::dlg_list(col_choices, title="Polygon outline colour")$res
+      if (length(response)) {
+        colour = response
+      }
+
       poly = tbreak:::point_to_cell_polygon(coord_string, raster)
+      poly = st_sf(poly)
+      poly$OGR_STYLE = sprintf ("PEN(c:%s)", col2hex(colour))
       kml_filename = stri_replace_last(kml_filename, '', regex='\\.kml')
       write_sf(
         poly, 
