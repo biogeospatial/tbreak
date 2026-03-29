@@ -24,7 +24,7 @@ get_date_vec_from_raster_names = function (raster) {
 }
 
 calc_and_plot_beast_modis_coord = function (raster, coord, main = NULL, start_time=NULL, ...) {
-  coord = parse_coord_string(coord)
+  coord = parse_coord_string(coord, crs(raster))
 
   # dates = get_date_vec_from_raster_names(raster)
 
@@ -183,7 +183,7 @@ get_default_beast_metadata = function (raster, dates=NULL, ...) {
   return (metadata)
 }
 
-parse_coord_string = function (coord) {
+parse_coord_string = function (coord, ll_to_crs) {
   coord = stri_trim(coord)
 
   in_metres = stri_sub(coord, -1) == "m"
@@ -231,8 +231,11 @@ parse_coord_string = function (coord) {
     x = parse_lon(xy[1])
     y = parse_lat(xy[2])
     point = st_sfc(st_point(c(x,y)), crs = 4326)
-    point2 = st_transform (point, tbreak:::modis_crs())
+    crs = ifelse (is.null(ll_to_crs) || ll_to_crs=="", tbreak:::modis_crs(), ll_to_crs)
+    message (crs)
+    point2 = st_transform (point, crs)
     p = st_coordinates(point2)
+    message (p)
     return (c(p[1], p[2]))
   }
 
@@ -272,7 +275,7 @@ ext_from_arcgis_coord = function (coord, xoff=100000, yoff=-100000) {
 #  convert a coordinate copied from ArcGIS to a format usable with terra
 #  requires the extent be stored on the rbeast object
 coord2idx_rbeast = function (b, coord) {
-  coord = parse_coord_string(coord)
+  coord = parse_coord_string(coord, b$crs)
   x = coord[1]
   y = coord[2]
 
@@ -299,7 +302,7 @@ coord2idx_rbeast = function (b, coord) {
 plot_beast_modis_coord = function (b, coord, t=FALSE, main=NULL) {
 
   if (isa_tiled_beast(b)) {
-    p = st_point (parse_coord_string(coord))
+    p = st_point (parse_coord_string(coord, b$crs))
     target_tile = st_intersects(p, b$index)[[1]]
     return (plot_beast_modis_coord(b$beasts[[target_tile]], coord, t, main))
   }
@@ -632,7 +635,7 @@ export_beast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
 
 
 plot_bfast_modis_coord = function (raster, coord, h=0.15, main=NULL) {
-  coord = parse_coord_string(coord)
+  coord = parse_coord_string(coord, crs(raster))
 
   #  generate time axis if needed
   #  assumes form 2024-01-24 somewhere in band name
@@ -691,7 +694,7 @@ assign_time_to_raster = function (raster, format= "%Y-%m-%d") {
 }
 
 get_cellnum_modis_coord = function (raster, coord) {
-  coord = parse_coord_string(coord)
+  coord = parse_coord_string(coord, crs(raster))
 
   cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
   if (is.na(cell_num)) {
@@ -755,7 +758,7 @@ plot_ts_modis_coord = function (raster, coord, main=NULL) {
 
 
 point_to_cell_polygon = function (coord, raster) {
-  coord = parse_coord_string(coord)
+  coord = parse_coord_string(coord, crs(raster))
 
   c = res(raster)
   e = ext(raster)
@@ -773,7 +776,7 @@ point_to_cell_polygon = function (coord, raster) {
       )
     )
   )
-  pol = sf::st_sfc(pol, crs=modis_crs())
+  pol = sf::st_sfc(pol, crs=crs(raster))
   pol
 }
 
