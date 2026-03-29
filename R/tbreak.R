@@ -660,8 +660,14 @@ plot_bfast_modis_coord = function (raster, coord, h=0.15, main=NULL) {
   u = unlist(raster[cell_num])
   #u[u < -0.25] = NA
 
-  if (sum(is.na(u)) > (length(u) / 10)) {
-    message ("More than 10% of records are NA, skipping bfast generation")
+  na_frac = sum(is.na(u)) / length(u)
+  if (na_frac > 0.1) {
+    message (
+      sprintf (
+        "More than 10% of records are NA (%d), skipping bfast generation",
+        na_frac * 100
+      )
+    )
     return()
   }
 
