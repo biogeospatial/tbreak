@@ -376,7 +376,7 @@ rasterise_tiled_beast = function (tb) {
 
   #  now make mosaics from spat raster collections
   for (name in names(results)) {
-    results[[name]] = terra::mosaic(terra::sprc(results[[name]]))
+    results[[name]] = terra::merge(terra::sprc(results[[name]]))
   }
 
   results
@@ -455,7 +455,7 @@ beastbit2raster = function (b, component = "trend", subcomponent = "ncp", inf_to
       rr = beastbit2raster(b$beasts[[idx]], component, subcomponent, inf_to_na, template)
       rasters[[idx]] = rr
     }
-    return(mosaic(sprc(rasters)))
+    return(terra::merge(sprc(rasters)))
   }
 
   if (class(b) != "beast") {
