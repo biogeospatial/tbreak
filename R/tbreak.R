@@ -232,10 +232,8 @@ parse_coord_string = function (coord, ll_to_crs) {
     y = parse_lat(xy[2])
     point = st_sfc(st_point(c(x,y)), crs = 4326)
     crs = ifelse (is.null(ll_to_crs) || ll_to_crs=="", tbreak:::modis_crs(), ll_to_crs)
-    message (crs)
     point2 = st_transform (point, crs)
     p = st_coordinates(point2)
-    message (p)
     return (c(p[1], p[2]))
   }
 
