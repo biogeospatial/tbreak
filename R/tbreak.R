@@ -302,6 +302,10 @@ plot_beast_modis_coord = function (b, coord, t=FALSE, main=NULL) {
   if (isa_tiled_beast(b)) {
     p = st_point (parse_coord_string(coord, b$crs))
     target_tile = st_intersects(p, b$index)[[1]]
+    if (!length(target_tile)) {
+      message ("Coordinate does not intersect the result")
+      return()
+    }
     return (plot_beast_modis_coord(b$beasts[[target_tile]], coord, t, main))
   }
 
