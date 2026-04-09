@@ -528,12 +528,14 @@ beastbit2raster = function (b, component = "trend", subcomponent = "ncp", inf_to
           t = lubridate::date_decimal (b$time)
         }
         terra::time(r) = t
+        names(r) = as_date(t)
       }
-
-      names(r) = paste0 (
-        sprintf ("%s_%s", component, subcomponent),
-        formatC(1:nbands, flag="0", width=nchar(nbands))
-      )
+      else {
+        names(r) = paste0 (
+          sprintf ("%s_%s", component, subcomponent),
+          formatC(1:nbands, flag="0", width=nchar(nbands))
+        )
+      }
 
     }
     else {
