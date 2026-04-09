@@ -750,7 +750,7 @@ plot_ts_modis_coord = function (raster, coord, main=NULL) {
     }
 
     z = zoo::zoo(u, dates)
-    plot (z, xlab = "Index", ylab = "Date", main = main)
+    plot (z, ylab = "Index", xlab = "Date", main = main)
 
     #  do we have any NAs?  highlight vals before and after
     na_prev_z = is.na(c(FALSE, z[-length(z)]))
