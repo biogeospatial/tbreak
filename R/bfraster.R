@@ -1,7 +1,10 @@
+library("bfast")
+
+
 bfast_raster = function (raster, h=1/7, ...) {
 
-  rdims = dim(raster) 
-  
+  rdims = dim(raster)
+
   if (rdims[3] < 20) {
     stop ("Fewer than 20 time steps in data set")
   }
@@ -13,23 +16,27 @@ bfast_raster = function (raster, h=1/7, ...) {
   if (h > 1) {
     h = h / as.numeric (dates[length(dates)] - dates[1])
   }
-  
+
   targets = (sum(is.na(raster)) / rdims[3]) <= 0.1
   targets[targets == 0] = NA
-  
+
   #  pre-allocate vector - might save some computation
   o = vector("list", rdims[1] * rdims[2])
-  
+
   cell_ids = cells(targets)
   ncells = length(cell_ids)
 
   i = 0
   for (c in cell_ids) {
     i = i + 1
-    if (i %% 10 == 1) {
-      message (sprintf ("%d of %d", i, ncells))
+    if (i %% 100 == 1) {
+      message (sprintf ("Processing cell %d of %d", i, ncells))
     }
-    
+
+    #  Probably inefficient to get each cell separately but
+    #  avoids converting the whole raster to a matrix and
+    #  thus doubling the memory load.
+    #  Profiling shows the bfast::bfast call takes all the time anyway.
     u = unlist(raster[c])
 
     t2 = bfast::bfastts(u, dates, type = '16-day')
@@ -39,9 +46,10 @@ bfast_raster = function (raster, h=1/7, ...) {
     o[[c]] = tb
   }
 
-  e = ext(raster)
   dims = dim(raster)
-  res = list (models = o, ext = e, dims = dims)
+  e = as.vector(ext(raster)) #  ext objects do not survive serialisation otherwise
+  crs = crs(raster)
+  res = list (models = o, ext = e, dims = dims, crs = crs)
 
   invisible (res)
 }
