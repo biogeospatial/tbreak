@@ -75,7 +75,7 @@ bfast_bit_to_raster = function (b, component="trend_ncp") {
 
   stopifnot(
     !is.null(component),
-    component %in% c("trend_ncp", "season_ncp", "r2")
+    component %in% c("trend_ncp", "season_ncp", "R2")
   )
 
   funcs = list (
@@ -93,7 +93,7 @@ bfast_bit_to_raster = function (b, component="trend_ncp") {
         sum(m$output[[length(m$output)]]$Wt.bp > 0)
       )
     },
-    "r2" = function (m) {
+    "R2" = function (m) {
       ifelse (
         is.null(m),
         NA,
@@ -125,7 +125,7 @@ export_bfast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
   outputs = character()
 
 
-  for (name in c("trend_ncp", "season_ncp", "r2")) {
+  for (name in c("trend_ncp", "season_ncp", "R2")) {
     pfx = file.path (dir, paste0(prefix, name))
     outfile = paste0 (pfx, ".tif")
     message (outfile)

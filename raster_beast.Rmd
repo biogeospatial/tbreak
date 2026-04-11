@@ -376,3 +376,73 @@ if (length (out_dir) > 0) {
 }
 
 ```
+
+#  Run BFAST on the whole raster 
+
+Now run BFAST on the loaded raster. This is slower than BEAST so will take a while.
+
+Plotted results are the numbers of trend and season change points across the raster, plus the goodness of fit statistic (R^2).
+
+BFAST is deterministic so to plot the results for a single cell you can use the block  above.  
+
+
+```{r}
+
+out_dir = svDialogs::dlgDir(title = "Choose the output directory", default = output_dir)$res
+if (length (out_dir) > 0) {
+  setwd(out_dir)
+  output_dir = out_dir
+
+  #  Try to gracefully handle errors without overwriting a
+  #  pre-existing beast_raster object if we fail.
+  #  That said, stopping the session kills it all anyway.
+  bfast_result_tmp = tryCatch(
+    {
+      tbreak:::bfast_raster (raster)
+    }, error = function(e) {
+      stop (sprintf ("Unable to process data\n%s", e))
+    }
+  )
+  
+  bfast_result = bfast_result_tmp
+  rm (bfast_result_tmp)
+  
+  bfast_r2_raster = tbreak:::bfast_bit_to_raster(bfast_result, "R2")
+  plot (bfast_r2_raster, main = "R^2")
+  
+  bfast_ncps_raster = tbreak:::bfast_bit_to_raster(bfast_result, "season_ncp")
+  plot (bfast_ncps_raster, main = "Number of season change points")
+  
+  bfast_ncpt_raster = tbreak:::bfast_bit_to_raster(bfast_result, "trend_ncp")
+  plot (bfast_ncpt_raster, main = "Number of trend change points")
+
+}
+
+```
+
+
+#  Export the BEAST raster results
+
+Now export the beast results to a set of rasters.
+
+This generates many, many files.  You do not need all of them but see the help for the naming scheme.  
+
+Look for the Value list under [the help system](https://cran.r-project.org/web/packages/Rbeast/refman/Rbeast.html#beast123).  Search for text "The output is a list object of class "beast" containing the following fields".
+
+
+```{r}
+
+out_dir = svDialogs::dlgDir(title = "Choose the output directory", default = output_dir)$res
+if (length (out_dir) > 0) {
+  setwd(out_dir)
+  output_dir = out_dir
+
+  output_prefix = svDialogs::dlg_input(message = "Filename prefix", default="")$res
+  
+  save_flag      = svDialogs::dlg_list  (choices = c("No", "Yes"), title = "Overwrite existing files?")$res
+  overwrite_flag = ifelse (length(save_flag) > 0 && save_flag == "Yes", TRUE, FALSE)
+  
+  b_rasters = tbreak:::export_bfast_rasters(bfast_result, output_dir, output_prefix, overwrite_flag)
+}
+
+```
