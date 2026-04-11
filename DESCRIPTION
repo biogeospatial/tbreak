@@ -1,5 +1,5 @@
 Package: tbreak
-Title: Run beast and bfast change detection algorithms on raster data.
+Title: A wrapper for time series change detection algorithms with raster data
 Version: 0.6
 Authors@R: 
     person("Shawn", "Laffan", , "shawnlaffan@gmail.com", role = c("aut", "cre"))
