@@ -291,39 +291,35 @@ if (length (out_dir) > 0) {
 
 Now run beast on the loaded raster. This might take a while.
 
-Plotted result is the number of trend change points across the raster.
+Plotted results are the numbers of trend and season change points across the raster, plus the R^2 goodness of fit statistic for the model run across each cell.
 
 ```{r}
 
-out_dir = svDialogs::dlgDir(title = "Choose the output directory", default = output_dir)$res
-if (length (out_dir) > 0) {
-  setwd(out_dir)
-  output_dir = out_dir
 
-  #  Try to gracefully handle errors without overwriting a
-  #  pre-existing beast_raster object if we fail.
-  #  That said, stopping the session kills it all anyway.
-  beast_result_tmp = tryCatch(
-    {
-      tbreak:::tiled_beast_modis (raster)
-    }, error = function(e) {
-      stop (sprintf ("Unable to process data\n%s", e))
-    }
-  )
-  
-  beast_result = beast_result_tmp
-  rm (beast_result_tmp)
-  
-  r2_raster = tbreak:::beastbit2raster(beast_result, "R2")
-  plot (r2_raster, main = "R^2")
-  
-  ncps_raster = tbreak:::beastbit2raster(beast_result, "season", "ncp")
-  plot (ncps_raster, main = "Number of season change points")
-  
-  ncpt_raster = tbreak:::beastbit2raster(beast_result, "trend", "ncp")
-  plot (ncpt_raster, main = "Number of trend change points")
+#  Try to gracefully handle errors without overwriting a
+#  pre-existing beast_raster object if we fail.
+#  That said, stopping the session kills it all anyway.
+beast_result_tmp = tryCatch(
+  {
+    tbreak:::tiled_beast_modis (raster)
+  }, error = function(e) {
+    stop (sprintf ("Unable to process data\n%s", e))
+  }
+)
 
-}
+beast_result = beast_result_tmp
+rm (beast_result_tmp)
+
+beast_r2_raster = tbreak:::beastbit2raster(beast_result, "R2")
+plot (beast_r2_raster, main = "R^2")
+
+beast_ncps_raster = tbreak:::beastbit2raster(beast_result, "season", "ncp")
+plot (beast_ncps_raster, main = "Number of season change points")
+
+beast_ncpt_raster = tbreak:::beastbit2raster(beast_result, "trend", "ncp")
+plot (beast_ncpt_raster, main = "Number of trend change points")
+
+
 
 ```
 
@@ -388,35 +384,29 @@ BFAST is deterministic so to plot the results for a single cell you can use the 
 
 ```{r}
 
-out_dir = svDialogs::dlgDir(title = "Choose the output directory", default = output_dir)$res
-if (length (out_dir) > 0) {
-  setwd(out_dir)
-  output_dir = out_dir
+#  Try to gracefully handle errors without overwriting a
+#  pre-existing beast_raster object if we fail.
+#  That said, stopping the session kills it all anyway.
+bfast_result_tmp = tryCatch(
+  {
+    tbreak:::bfast_raster (raster)
+  }, error = function(e) {
+    stop (sprintf ("Unable to process data\n%s", e))
+  }
+)
 
-  #  Try to gracefully handle errors without overwriting a
-  #  pre-existing beast_raster object if we fail.
-  #  That said, stopping the session kills it all anyway.
-  bfast_result_tmp = tryCatch(
-    {
-      tbreak:::bfast_raster (raster)
-    }, error = function(e) {
-      stop (sprintf ("Unable to process data\n%s", e))
-    }
-  )
-  
-  bfast_result = bfast_result_tmp
-  rm (bfast_result_tmp)
-  
-  bfast_r2_raster = tbreak:::bfast_bit_to_raster(bfast_result, "R2")
-  plot (bfast_r2_raster, main = "R^2")
-  
-  bfast_ncps_raster = tbreak:::bfast_bit_to_raster(bfast_result, "season_ncp")
-  plot (bfast_ncps_raster, main = "Number of season change points")
-  
-  bfast_ncpt_raster = tbreak:::bfast_bit_to_raster(bfast_result, "trend_ncp")
-  plot (bfast_ncpt_raster, main = "Number of trend change points")
+bfast_result = bfast_result_tmp
+rm (bfast_result_tmp)
 
-}
+bfast_r2_raster = tbreak:::bfast_bit_to_raster(bfast_result, "R2")
+plot (bfast_r2_raster, main = "R^2")
+
+bfast_ncps_raster = tbreak:::bfast_bit_to_raster(bfast_result, "season_ncp")
+plot (bfast_ncps_raster, main = "Number of season change points")
+
+bfast_ncpt_raster = tbreak:::bfast_bit_to_raster(bfast_result, "trend_ncp")
+plot (bfast_ncpt_raster, main = "Number of trend change points")
+
 
 ```
 
