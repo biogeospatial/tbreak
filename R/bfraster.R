@@ -54,7 +54,7 @@ bfast_raster = function (raster, h=1/7, ...) {
   invisible (res)
 }
 
-
+#  very similar to get_date_vector_from_raster
 get_dates_from_raster = function (raster){
   if (all (is.na(terra::time(raster)))) {
     dates = names(raster)
@@ -70,3 +70,65 @@ get_dates_from_raster = function (raster){
   }
   dates
 }
+
+export_bfast_rasters = function (b, dir, prefix="", overwrite=FALSE) {
+
+  model1 = b$models[[1]]
+  stopifnot(class(model1) == "bfast")
+
+  outputs = character()
+
+  vals = list()
+
+  f = function (m) {
+    ifelse (
+      is.null(m),
+      NA,
+      sum(m$output[[length(m$output)]]$Vt.bp > 0)
+    )
+  }
+  vals[["trend_ncp"]] = sapply (b$models, FUN = f)
+  f = function (m) {
+    ifelse (
+      is.null(m),
+      NA,
+      sum(m$output[[length(m$output)]]$Wt.bp > 0)
+    )
+  }
+  vals[["season_ncp"]] = sapply (b$models, FUN = f)
+  f = function (m) {
+    ifelse (
+      is.null(m),
+      NA,
+      1 - sum (m$output[[length(m$output)]]$Nt ** 2, na.rm=TRUE)
+        / sum (m$Yt ** 2, na.rm=TRUE)
+    )
+  }
+  vals[["r2"]] = sapply (b$models, FUN = f)
+
+
+  r = list()
+  for (name in c("trend_ncp", "season_ncp", "r2")) {
+    rr = rast(
+      nrows=b$dims[1],
+      ncols=b$dims[2],
+      crs=b$crs,
+      extent=terra::ext(b$ext),
+      vals = vals[[name]]
+    )
+    r[[name]] = rr
+  }
+
+
+  for (name in names(r)) {
+    pfx = file.path (dir, paste0(prefix, name))
+    outfile = paste0 (pfx, ".tif")
+    message (outfile)
+
+    writeRaster(r[[name]], outfile, overwrite=overwrite)
+    outputs = c(outputs, outfile)
+  }
+
+  invisible(outputs)
+}
+
