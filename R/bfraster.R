@@ -1,7 +1,8 @@
 library("bfast")
+library("foreach")
 
 
-bfast_raster = function (raster, h=1/7, ...) {
+bfast_raster = function (raster, h=1/7, dopar=FALSE, ...) {
 
   rdims = dim(raster)
 
@@ -26,24 +27,52 @@ bfast_raster = function (raster, h=1/7, ...) {
   cell_ids = cells(targets)
   ncells = length(cell_ids)
 
-  i = 0
-  for (c in cell_ids) {
-    i = i + 1
-    if (i %% 100 == 1) {
-      message (sprintf ("Processing cell %d of %d", i, ncells))
+  if (!dopar) {
+    i = 0
+    for (c in cell_ids) {
+      i = i + 1
+      if (i %% 100 == 1) {
+        message (sprintf ("Processing cell %d of %d", i, ncells))
+      }
+
+      #  Probably inefficient to get each cell separately but
+      #  avoids converting the whole raster to a matrix and
+      #  thus doubling the memory load.
+      #  Profiling shows the bfast::bfast call takes all the time anyway.
+      u = unlist(raster[c])
+
+      t2 = bfast::bfastts(u, dates, type = '16-day')
+      #decomp = ifelse (na_frac == 0, "stlplus", "stl")
+      #  consider suppressWarnings
+      tb = bfast::bfast(t2, h=h, decomp="stlplus")
+      o[[c]] = tb
+    }
+  } else {
+
+    library(doParallel)
+    cl <- makeCluster(detectCores() - 1) # Leaves one core free for OS tasks
+    registerDoParallel(cl)
+
+    oo = foreach (c=cell_ids, .packages=c("bfast", "terra")) %dopar% {
+      u = unlist(raster[c])
+
+      t2 = bfast::bfastts(u, dates, type = '16-day')
+      #decomp = ifelse (na_frac == 0, "stlplus", "stl")
+      #  consider suppressWarnings
+      tb = bfast::bfast(t2, h=h, decomp="stlplus")
     }
 
-    #  Probably inefficient to get each cell separately but
-    #  avoids converting the whole raster to a matrix and
-    #  thus doubling the memory load.
-    #  Profiling shows the bfast::bfast call takes all the time anyway.
-    u = unlist(raster[c])
+    stopCluster(cl)
 
-    t2 = bfast::bfastts(u, dates, type = '16-day')
-    #decomp = ifelse (na_frac == 0, "stlplus", "stl")
-    #  consider suppressWarnings
-    tb = bfast::bfast(t2, h=h, decomp="stlplus")
-    o[[c]] = tb
+
+    #  now populate the main list
+    if (length(cell_ids) != rdims[1] * rdims[2]) {
+      for (i in 1:length(cell_ids)) {
+        o[[cell_ids[i]]] = oo[[i]]
+      }
+    } else {
+      o = oo
+    }
   }
 
   dims = dim(raster)

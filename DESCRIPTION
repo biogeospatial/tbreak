@@ -19,4 +19,6 @@ Imports:
     bfast,
     stlplus,
     zoo,
-    sf
+    sf,
+    foreach,
+    doParallel
