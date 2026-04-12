@@ -53,12 +53,13 @@ bfast_raster = function (raster, h=1/7, dopar=FALSE, ...) {
     cl <- makeCluster(detectCores() - 1) # Leaves one core free for OS tasks
     registerDoParallel(cl)
 
-    oo = foreach (c=cell_ids, .packages=c("bfast", "terra")) %dopar% {
-      u = unlist(raster[c])
+    #  don't enclose raster objects in the function or we get nasty errors
+    #  prob due to gc.
+    cells = lapply (cell_ids, FUN = function (c) { raster[c] })
 
+    oo = foreach (c=cells, .packages=c("bfast")) %dopar% {
+      u  = unlist(c)
       t2 = bfast::bfastts(u, dates, type = '16-day')
-      #decomp = ifelse (na_frac == 0, "stlplus", "stl")
-      #  consider suppressWarnings
       tb = bfast::bfast(t2, h=h, decomp="stlplus")
     }
 
