@@ -114,7 +114,7 @@ tiled_beast_modis = function (raster, tile_size=64, printParameter=TRUE, printPr
     printParameter = FALSE  #  only need this for the first one
   }
 
-  bm = list (index = v, beasts = b, time = dates)
+  bm = list (index = v, beasts = b, time = dates, crs=crs(raster))
 
   invisible (bm)
 }
