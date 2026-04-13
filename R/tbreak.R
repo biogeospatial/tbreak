@@ -529,7 +529,7 @@ beastbit2raster = function (b, component = "trend", subcomponent = "ncp", inf_to
           t = lubridate::date_decimal (b$time)
         }
         terra::time(r) = t
-        names(r) = as_date(t)
+        names(r) = lubridate::as_date(t)
       }
       else {
         names(r) = paste0 (
