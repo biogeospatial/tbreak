@@ -1,6 +1,53 @@
 library("bfast")
 library("foreach")
 
+plot_bfast_modis_coord = function (raster, coord, h=0.15, main=NULL) {
+  coord = parse_coord_string(coord, crs(raster))
+
+  #  generate time axis if needed
+  #  assumes form 2024-01-24 somewhere in band name
+  #  dup from above - should be a function
+  if (all (is.na(terra::time(raster)))) {
+    dates = names(raster)
+    pattern = r"(\b\d{4}-\d{2}-\d{2}\b)"
+    m = regexpr(pattern, dates)
+    dates = regmatches(dates, m)
+    dates = strptime(dates, "%Y-%m-%d")
+  }
+  else {
+    dates = terra::time(raster)
+    #  nasty but we otherwise get bfastts errors
+    dates = strptime(strftime(dates, format="%Y%m%d"), "%Y%m%d")
+  }
+
+  cell_num = terra::cellFromXY (raster, cbind (x = coord[1], y = coord[2]))
+  if (is.na(cell_num)) {
+    stop ("Coord does not intersect the raster")
+  }
+  u = unlist(raster[cell_num])
+  #u[u < -0.25] = NA
+
+  na_frac = sum(is.na(u)) / length(u)
+  if (na_frac > 0.2) {
+    message (
+      sprintf (
+        "More than 20% of records are NA (%d), skipping bfast generation",
+        na_frac * 100
+      )
+    )
+    return()
+  }
+
+  #  proportional to time period
+  if (h > 1) {
+    h = h / as.numeric (dates[length(dates)] - dates[1])
+  }
+
+  t2 = bfast::bfastts(u, dates, type = '16-day')
+  tb = bfast::bfast(t2, h=h)
+  plot(tb, main=main)
+  invisible (tb)
+}
 
 bfast_raster = function (raster, h=1/7, dopar=FALSE, ...) {
 
@@ -18,7 +65,7 @@ bfast_raster = function (raster, h=1/7, dopar=FALSE, ...) {
     h = h / as.numeric (dates[length(dates)] - dates[1])
   }
 
-  targets = (sum(is.na(raster)) / rdims[3]) <= 0.1
+  targets = (sum(is.na(raster)) / rdims[3]) <= 0.2
   targets[targets == 0] = NA
 
   #  pre-allocate vector - might save some computation
@@ -41,10 +88,20 @@ bfast_raster = function (raster, h=1/7, dopar=FALSE, ...) {
       #  Profiling shows the bfast::bfast call takes all the time anyway.
       u = unlist(raster[c])
 
-      t2 = bfast::bfastts(u, dates, type = '16-day')
-      #decomp = ifelse (na_frac == 0, "stlplus", "stl")
-      #  consider suppressWarnings
-      tb = bfast::bfast(t2, h=h, decomp="stlplus")
+      tryCatch ({
+        t2 = bfast::bfastts(u, dates, type = '16-day')
+        #decomp = ifelse (na_frac == 0, "stlplus", "stl")
+        #  consider suppressWarnings
+        tb = bfast::bfast(t2, h=h, decomp="stlplus")
+      },
+      warning = function (w) {
+        w_coord = xyFromCell(raster, c)
+        warning (sprintf ("Coord %s %s: %s", w_coord[1], w_coord[2], w))
+      },
+      error = function (e) {
+        tb = NULL
+      })
+
       o[[c]] = tb
     }
   } else {
@@ -58,9 +115,17 @@ bfast_raster = function (raster, h=1/7, dopar=FALSE, ...) {
     cells = lapply (cell_ids, FUN = function (c) { raster[c] })
 
     oo = foreach (c=cells, .packages=c("bfast")) %dopar% {
-      u  = unlist(c)
-      t2 = bfast::bfastts(u, dates, type = '16-day')
-      tb = bfast::bfast(t2, h=h, decomp="stlplus")
+      u = unlist(c)
+      tryCatch ({
+        t2 = bfast::bfastts(u, dates, type = '16-day')
+        tb = bfast::bfast(t2, h=h, decomp="stlplus")
+      },
+      warning = function (e) {
+        warning (sprintf ("Cell %s: %s", c, e))
+      },
+      error = function (e) {
+        tb = NULL
+      })
     }
 
     stopCluster(cl)
