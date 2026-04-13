@@ -669,7 +669,7 @@ plot_bfast_modis_coord = function (raster, coord, h=0.15, main=NULL) {
   if (na_frac > 0.2) {
     message (
       sprintf (
-        "More than 10% of records are NA (%d), skipping bfast generation",
+        "More than 20% of records are NA (%d), skipping bfast generation",
         na_frac * 100
       )
     )

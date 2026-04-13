@@ -18,7 +18,7 @@ bfast_raster = function (raster, h=1/7, dopar=FALSE, ...) {
     h = h / as.numeric (dates[length(dates)] - dates[1])
   }
 
-  targets = (sum(is.na(raster)) / rdims[3]) <= 0.1
+  targets = (sum(is.na(raster)) / rdims[3]) <= 0.2
   targets[targets == 0] = NA
 
   #  pre-allocate vector - might save some computation
@@ -41,10 +41,20 @@ bfast_raster = function (raster, h=1/7, dopar=FALSE, ...) {
       #  Profiling shows the bfast::bfast call takes all the time anyway.
       u = unlist(raster[c])
 
-      t2 = bfast::bfastts(u, dates, type = '16-day')
-      #decomp = ifelse (na_frac == 0, "stlplus", "stl")
-      #  consider suppressWarnings
-      tb = bfast::bfast(t2, h=h, decomp="stlplus")
+      tryCatch ({
+        t2 = bfast::bfastts(u, dates, type = '16-day')
+        #decomp = ifelse (na_frac == 0, "stlplus", "stl")
+        #  consider suppressWarnings
+        tb = bfast::bfast(t2, h=h, decomp="stlplus")
+      },
+      warning = function (w) {
+        w_coord = xyFromCell(raster, c)
+        warning (sprintf ("Coord %s %s: %s", w_coord[1], w_coord[2], w))
+      },
+      error = function (e) {
+        tb = NULL
+      })
+
       o[[c]] = tb
     }
   } else {
@@ -58,9 +68,17 @@ bfast_raster = function (raster, h=1/7, dopar=FALSE, ...) {
     cells = lapply (cell_ids, FUN = function (c) { raster[c] })
 
     oo = foreach (c=cells, .packages=c("bfast")) %dopar% {
-      u  = unlist(c)
-      t2 = bfast::bfastts(u, dates, type = '16-day')
-      tb = bfast::bfast(t2, h=h, decomp="stlplus")
+      u = unlist(c)
+      tryCatch ({
+        t2 = bfast::bfastts(u, dates, type = '16-day')
+        tb = bfast::bfast(t2, h=h, decomp="stlplus")
+      },
+      warning = function (e) {
+        warning (sprintf ("Cell %s: %s", c, e))
+      },
+      error = function (e) {
+        tb = NULL
+      })
     }
 
     stopCluster(cl)
