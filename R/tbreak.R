@@ -666,7 +666,7 @@ plot_bfast_modis_coord = function (raster, coord, h=0.15, main=NULL) {
   #u[u < -0.25] = NA
 
   na_frac = sum(is.na(u)) / length(u)
-  if (na_frac > 0.1) {
+  if (na_frac > 0.2) {
     message (
       sprintf (
         "More than 10% of records are NA (%d), skipping bfast generation",
