@@ -231,7 +231,7 @@ parse_coord_string = function (coord, out_crs=NULL) {
     x = parse_lon(xy[1])
     y = parse_lat(xy[2])
     point = st_sfc(st_point(c(x,y)), crs = 4326)
-    if (!is.null(out_crs) || out_crs=="") {
+    if (!(is.null(out_crs) || out_crs=="")) {
       point = st_transform (point, out_crs)
     }
     p = st_coordinates(point)
