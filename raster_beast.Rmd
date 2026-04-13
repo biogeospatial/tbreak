@@ -452,13 +452,11 @@ plot (bfast_ncpt_raster, main = "Number of trend change points")
 ```
 
 
-#  Export the BEAST raster results
+#  Export the BFAST raster results
 
 Now export the beast results to a set of rasters.
 
-This generates many, many files.  You do not need all of them but see the help for the naming scheme.  
-
-Look for the Value list under [the help system](https://cran.r-project.org/web/packages/Rbeast/refman/Rbeast.html#beast123).  Search for text "The output is a list object of class "beast" containing the following fields".
+This only does a subset of the possible outputs, namely the numbers of trend and season change points per cell, and the R^2.
 
 
 ```{r}
