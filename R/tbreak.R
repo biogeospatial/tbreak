@@ -183,7 +183,7 @@ get_default_beast_metadata = function (raster, dates=NULL, ...) {
   return (metadata)
 }
 
-parse_coord_string = function (coord, ll_to_crs) {
+parse_coord_string = function (coord, out_crs=NULL) {
   coord = stri_trim(coord)
 
   in_metres = stri_sub(coord, -1) == "m"
@@ -231,9 +231,10 @@ parse_coord_string = function (coord, ll_to_crs) {
     x = parse_lon(xy[1])
     y = parse_lat(xy[2])
     point = st_sfc(st_point(c(x,y)), crs = 4326)
-    crs = ifelse (is.null(ll_to_crs) || ll_to_crs=="", tbreak:::modis_crs(), ll_to_crs)
-    point2 = st_transform (point, crs)
-    p = st_coordinates(point2)
+    if (!is.null(out_crs) || out_crs=="") {
+      point = st_transform (point, out_crs)
+    }
+    p = st_coordinates(point)
     return (c(p[1], p[2]))
   }
 
