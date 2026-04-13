@@ -1,12 +1,31 @@
 ---
-title: "BEAST with spatial data"
+title: "BEAST and BFAST with spatial data"
 output: html_notebook
 editor_options: 
   markdown: 
     wrap: 72
 ---
 
-# Load needed libraries. 
+# Overview
+
+This is effectively a poor-man's graphical user interface to load some raster 
+data and then process it using the BEAST and NFAST algorithms.  
+
+It is not designed to run as a sequence.  The order is up to you once you have 
+loaded the relevant libraries and the raster in the first two steps.  
+
+Plot titles and coordinates are retained between steps so you can more easily 
+generate consistent results.  For example, BFAST and BEAST plots for a coordinate
+plus the associated cell outline as a KML file. 
+
+
+```{r}
+
+paste ("Yes, that all sounds reasonable.")
+
+```
+
+# Load needed libraries
 
 Install if necessary.
 
