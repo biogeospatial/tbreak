@@ -126,8 +126,8 @@ ArcGIS and choosing "Copy Coordinates".
 
 In ArcGIS:
 
-Make sure the map's display units uses either the MODIS Sinusoidal
-coordinate system or WGS 1984. These can be checked and set under the
+Make sure the map's display units uses either WGS 1984 OR the same coordinate 
+system as your raster. These can be checked and set under the
 map's properties (right click on the map name in the table of contents).
 
 The display units can also be changed by clicking the drop down to the
@@ -154,11 +154,11 @@ if (length (resp)) {
 
 #  Single cell BFAST result and plot
 
-Generate a bfast output for the same coord, or a different one if
+Generate a bfast output for the same coord as above, or a different one if
 preferred.
 
 The "h" parameter is the segment size as a fraction of the time series.
-Whole numbers are treated as days and converted to fractions internally.
+Numbers greater than one are treated as days and converted to fractions internally.
 
 ```{r}
 
@@ -216,6 +216,9 @@ if preferred.
 This is mostly useful for diagnostic checks as the bfast plot includes
 the time series as the top plot.
 
+Sequences with no values are marked with the red and blue dots
+for the start and end, respectively.
+
 ```{r}
 
 response = svDialogs::dlg_input(
@@ -235,7 +238,11 @@ if (length (resp)) {
 
 # Create a KML polygon file of the cell associated with the coordinate
 
-Export a polygon in KML format for the pixel corresponding with the specified coordinate.  This can then be loaded into a GIS or Google Earth.
+Export a polygon in KML format for the pixel corresponding with the specified 
+coordinate.  This can then be loaded into a GIS or Google Earth.
+
+Very handy for tracking where your plots are from, and also comparing 
+against high resolution imagery.  
 
 ```{r}
 
@@ -291,7 +298,8 @@ if (length (out_dir) > 0) {
 
 Now run beast on the loaded raster. This might take a while.
 
-Plotted results are the numbers of trend and season change points across the raster, plus the R^2 goodness of fit statistic for the model run across each cell.
+Plotted results are the numbers of trend and season change points across the 
+raster, plus the R^2 goodness of fit statistic for the model run across each cell.
 
 ```{r}
 
@@ -327,7 +335,9 @@ plot (beast_ncpt_raster, main = "Number of trend change points")
 
 Plot the result for one cell from a "beasted" raster.
 
-This is most useful for when you want the exact same result that was generated in the preceding beast raster run.  Otherwise the single cell results are not entirely consistent.
+This is most useful for when you want the exact same result that was generated 
+in the preceding beast raster run.  Otherwise the single cell results are not 
+entirely consistent.
 
 ```{r}
 
@@ -351,9 +361,11 @@ if (length (resp)) {
 
 Now export the beast results to a set of rasters.
 
-This generates many, many files.  You do not need all of them but see the help for the naming scheme.  
+This generates many, many files.  You do not need all of them but see the help 
+for the naming scheme.  
 
-Look for the Value list under [the help system](https://cran.r-project.org/web/packages/Rbeast/refman/Rbeast.html#beast123).  Search for text "The output is a list object of class "beast" containing the following fields".
+Look for the Value list under [the help system](https://cran.r-project.org/web/packages/Rbeast/refman/Rbeast.html#beast123).  
+Search for text "The output is a list object of class "beast" containing the following fields".
 
 
 ```{r}
