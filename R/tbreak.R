@@ -333,7 +333,7 @@ load_data = function (file = NULL, drivers=NULL) {
   }
   r = rast(file, drivers=drivers)
   if (any (is.na(terra::time(r)))) {
-    dates = strptime(names(r), "%Y-%m-%d")
+    dates = strptime(names(r), "%Y-%m-%d", tz="UTC")
     if (any(is.na(dates))) {
       stop ("Some of the field names do not satisfy the date format requirement (yyyy-mm-dd)")
     }
@@ -692,10 +692,19 @@ assign_time_to_raster = function (raster, format= "%Y-%m-%d") {
   #  dup from above - should be a function
   if (any (is.na(terra::time(raster)))) {
     dates = names(raster)
-    pattern = r"(\b\d{4}-\d{2}-\d{2}\b)"
-    m = regexpr(pattern, dates)
-    dates = regmatches(dates, m)
-    dates = strptime(dates, format)
+    if (any(stri_count_fixed(dates, "StdTime=") == 1)) {  #  ArcGIS mangled the dates
+      base = lubridate::ymd("19000101", tz="UTC")
+      pattern = r"(\d+\.\d+$)"
+      m = regexpr(pattern, dates)
+      dates = regmatches(dates, m)
+      #  position of the 1 determines if it is a day or second - should use a day object
+      dates = base - lubridate::ddays() + duration(as.numeric(dates), units="day")
+    } else {  #  MODIS naming scheme
+      pattern = r"(\b\d{4}-\d{2}-\d{2}\b)"
+      m = regexpr(pattern, dates)
+      dates = regmatches(dates, m)
+      dates = strptime(dates, format, tz="UTC")
+    }
     terra::time(raster) = dates
   }
   else {
