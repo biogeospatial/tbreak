@@ -262,15 +262,6 @@ parse_coord_string = function (coord, out_crs=NULL) {
 }
 
 
-ext_from_arcgis_coord = function (coord, xoff=100000, yoff=-100000) {
-  coord = parse_coord_string(coord)
-  x1 = coord[1]
-  x2 = coord[1] + xoff
-  y1 = coord[2]
-  y2 = coord[2] + yoff
-  terra::ext(min(x1, x2), max(x1, x2), min(y1, y2), max(y1, y2))
-}
-
 #  convert a coordinate copied from ArcGIS to a format usable with terra
 #  requires the extent be stored on the rbeast object
 coord2idx_rbeast = function (b, coord) {
@@ -327,27 +318,6 @@ plot_beast_modis_coord = function (b, coord, t=FALSE, main=NULL) {
 
 }
 
-load_data = function (file = NULL, drivers=NULL) {
-  if (is.null(file)) {
-    file = file.choose()
-  }
-  r = rast(file, drivers=drivers)
-  if (any (is.na(terra::time(r)))) {
-    dates = strptime(names(r), "%Y-%m-%d", tz="UTC")
-    if (any(is.na(dates))) {
-      stop ("Some of the field names do not satisfy the date format requirement (yyyy-mm-dd)")
-    }
-    terra::time(r) = as.Date(dates)
-  }
-  return (r)
-}
-
-
-beast_time_to_date = function (x) {
-  #  this fails because the current month and day are assumed for %Y on its own
-  #b$time_as_date = as.Date(as.character(floor(b$time)), format="%Y") + (b$time - floor (b$time))*365
-  as.Date(paste(floor(x), ceiling((x - floor (x))*365), sep=""), format="%Y%j")
-}
 
 #  need to do one part at a time
 rasterise_tiled_beast = function (tb) {
