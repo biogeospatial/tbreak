@@ -1,6 +1,6 @@
 Package: tbreak
 Title: A wrapper for time series change detection algorithms with raster data
-Version: 0.7
+Version: 0.75
 Authors@R: 
     person("Shawn", "Laffan", , "shawnlaffan@gmail.com", role = c("aut", "cre"))
 Description: Wraps the RBeast and bfast code to work with raster data, including exports and per-cell plotting.
